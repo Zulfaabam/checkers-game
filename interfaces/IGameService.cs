@@ -1,7 +1,7 @@
 public interface IGameService
 {
     public IPlayer CurrentPlayer { get; set; }
-    public Dictionary<IPlayer, List<IPiece>> PlayersPieces { get; }
+    public Dictionary<IPlayer, List<IPiece>> PlayersPieces { get; set; }
 
     public GameResponseDto InitializeBoard(CreateGameDto? dto);
     public UpdatePiecePositionResultDto TryMove(UpdatePiecePositionDto dto);
