@@ -4,6 +4,11 @@ public class GameService : IGameService {
   public IPlayer CurrentPlayer { get; set;}
   public Dictionary<IPlayer, List<IPiece>> PlayersPieces { get; set;}
 
+  public GameService (IBoard board, List<IPlayer> players)
+  {
+    _board = board;
+    _players = players;
+  }
   public GameResponseDto InitializeBoard(CreateGameDto? dto)
   {
     
@@ -14,17 +19,17 @@ public class GameService : IGameService {
   }
   public IPiece? GetPieceAt(Position position)
   {
-    
+    return _board.Cell[position.X, position.Y].Piece;
   }
   public IEnumerable<IPiece> AllPieces()
   {
     
   }
-  public IEnumerable<LegalMovesResponseDto> GetLegalMoves(IPlayer player)
+  public IEnumerable<LegalMovesResponseDto> GetLegalMovesFromPlayer(IPlayer player)
   {
     
   }
-  public IEnumerable<LegalMovesResponseDto> GetLegalMoves(IPiece piece)
+  public IEnumerable<LegalMovesResponseDto> GetLegalMovesFromPiece(IPiece piece)
   {
     
   }

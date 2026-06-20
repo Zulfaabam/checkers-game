@@ -21,7 +21,7 @@ public class GameController
         if (piece == null)
             throw new ArgumentException("Invalid piece position");
 
-        return _gameService.GetLegalMoves(piece).FirstOrDefault() ?? new LegalMovesResponseDto();
+        return _gameService.GetLegalMovesFromPiece(piece).FirstOrDefault() ?? new LegalMovesResponseDto();
     }
 
     // public GameResponseDto Move(UpdatePiecePositionDto dto)
