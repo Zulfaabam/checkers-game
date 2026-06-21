@@ -11,7 +11,20 @@ public class GameService : IGameService {
   }
   public GameResponseDto InitializeBoard(CreateGameDto? dto)
   {
-    
+    if (dto == null)
+    {
+      throw new ArgumentNullException();
+    }
+
+    IBoard board = new Board(dto.Size, PlayersPieces);
+
+    return new GameResponseDto
+    {
+      CurrentPlayer = CurrentPlayer,
+      Winner = null,
+      Board = board
+    };
+
   }
   public UpdatePiecePositionResultDto TryMove(UpdatePiecePositionDto dto)
   {
