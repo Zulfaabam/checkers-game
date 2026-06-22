@@ -18,6 +18,7 @@ public class GameController
     public LegalMovesResponseDto GetLegalMoves(Position piecePosition)
     {
         var piece = _gameService.GetPieceAt(piecePosition);
+        
         if (piece == null)
             throw new ArgumentException("Invalid piece position");
 

@@ -1,21 +1,13 @@
 public class Board : IBoard
 {
-  public ICell[,] Cell { get;}
-
+  public ICell[,] Cell { get; set; }
   public BoardSize Size { get; set; }
 
-  public Board (BoardSize size, Dictionary<IPlayer, List<IPiece>> playersPiece)
+  public Board(BoardSize size, List<IPlayer> players)
   {
     Size = size;
 
-    int boardSize = size switch
-    {
-      BoardSize.Small => 6,
-      BoardSize.Standard => 8,
-      BoardSize.Large => 10,
-      BoardSize.VeryLarge => 12,
-      _ => throw new ArgumentOutOfRangeException()
-    };
+    int boardSize = (int)size;
 
     Cell = new Cell[boardSize, boardSize];
 
@@ -23,7 +15,17 @@ public class Board : IBoard
     {
       for (int column = 0; column < boardSize; column++)
       {
-          Cell[row, column] = new Cell(new Position(row, column), playersPiece);
+        if ((row + column) % 2 == 1)
+        {
+          if (row < 3)
+          {
+            Cell[row, column] = new Cell(new Position(row, column), new Piece(PieceType.Man, players.First(p => !p.IsPlayerOne).Color));
+          }
+          else if (row >= boardSize - 3)
+          {
+            Cell[row, column] = new Cell(new Position(row, column), new Piece(PieceType.Man, players.First(p => p.IsPlayerOne).Color));
+          }
+        }
       }
     }
   }

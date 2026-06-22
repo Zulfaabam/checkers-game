@@ -1,7 +1,7 @@
 public enum BoardSize
 {
-    Small,
-    Standard,
-    Large,
-    VeryLarge
+    Small = 6,
+    Standard = 8,
+    Large = 10,
+    VeryLarge = 12
 }
