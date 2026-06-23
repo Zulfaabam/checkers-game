@@ -12,7 +12,33 @@ public class GameController
 
     public GameResponseDto Start(CreateGameDto dto)
     {
-        return _gameService.InitializeBoard(dto);
+        var res = _gameService.InitializeBoard(dto);
+
+        var consoleRenderer = new ConsoleRenderer(res.Board, this);
+        
+        while (res.Winner == null)
+        {
+            consoleRenderer.Render();
+
+            var move = consoleRenderer.ReadMoveFromConsole();
+            
+            var moveResult = _gameService.TryMove(move);
+
+            if (!moveResult.MovementSucceed)
+            {
+                Console.WriteLine("Invalid move");
+                continue;
+            }
+
+            res = new GameResponseDto
+            {
+                CurrentPlayer = moveResult.CurrentPlayer,
+                Winner = moveResult.Winner,
+                Board = moveResult.Board
+            };
+        }
+
+        return res;
     }
 
     public LegalMovesResponseDto GetLegalMoves(Position piecePosition)
@@ -22,13 +48,23 @@ public class GameController
         if (piece == null)
             throw new ArgumentException("Invalid piece position");
 
-        return _gameService.GetLegalMovesFromPiece(piece).FirstOrDefault() ?? new LegalMovesResponseDto();
+        return _gameService.GetLegalMovesFromPiece(piece) ?? new LegalMovesResponseDto();
     }
 
-    // public GameResponseDto Move(UpdatePiecePositionDto dto)
-    // {
-    //     return _gameService.TryMove(dto);
-    // }
+    public GameResponseDto Move(UpdatePiecePositionDto dto)
+    {
+        var res = _gameService.TryMove(dto);
+            
+        if (!res.MovementSucceed)
+            throw new InvalidOperationException("Invalid move");
+
+        return new GameResponseDto
+        {
+            CurrentPlayer = _gameService.CurrentPlayer,
+            Winner = res.Winner,
+            Board = res.Board
+        };
+    }
 
     public GameResponseDto Restart()
     {

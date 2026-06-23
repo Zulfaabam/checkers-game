@@ -10,13 +10,16 @@ public class GameService : IGameService
     _board = board;
     _players = players;
 
-    CurrentPlayer = _players.Find(p => p.IsPlayerOne) ?? throw new ArgumentNullException();
+    CurrentPlayer = players.Find(p => p.IsPlayerOne) ?? throw new ArgumentNullException();
 
-    PlayersPieces = new Dictionary<IPlayer, List<IPiece>>
-    {
-      { _players[0], board.Cell.Cast<ICell>().Where(c => c.Piece != null && c.Piece.Color == players[0].Color).Select(c => c.Piece!).ToList() },
-      { _players[1], board.Cell.Cast<ICell>().Where(c => c.Piece != null && c.Piece.Color == players[1].Color).Select(c => c.Piece!).ToList() }
-    };
+    PlayersPieces = _players.ToDictionary(
+        player => player,
+        player => _board.Cell
+            .OfType<ICell>()
+            .Where(cell => cell.Piece != null && cell.Piece.Color == player.Color)
+            .Select(cell => cell.Piece!)
+            .ToList()
+    );
   }
   public GameResponseDto InitializeBoard(CreateGameDto? dto)
   {
@@ -58,9 +61,18 @@ public class GameService : IGameService
     // check the piece type and color
 
     // check if the move is legal
+    var legalMoves = GetLegalMovesFromPiece(piece);
+
+    if (!legalMoves.Moves.Contains(dto.ToPosition))
+    {
+      return new UpdatePiecePositionResultDto
+      {
+        MovementSucceed = false,
+      };
+    }
 
     // perform the move
-    PerformMove(piece, dto.ToPosition);
+    PerformMove(piece, dto.FromPosition, dto.ToPosition);
 
     // check if the move resulted in a capture
 
@@ -70,6 +82,10 @@ public class GameService : IGameService
     SwitchTurn();
 
     // return the result
+    return new UpdatePiecePositionResultDto
+    {
+      MovementSucceed = true
+    };
   }
   public IPiece? GetPieceAt(Position position)
   {
@@ -79,26 +95,67 @@ public class GameService : IGameService
   {
     return _board.Cell.Cast<ICell>().Where(c => c.Piece != null).Select(c => c.Piece!);
   }
-  public IEnumerable<LegalMovesResponseDto> GetLegalMovesFromPlayer(IPlayer player)
+  public LegalMovesResponseDto GetLegalMovesFromPlayer(IPlayer player)
   {
     IEnumerable<Position> legalMoves = new List<Position>();
+
+    return new LegalMovesResponseDto
+    {
+      Moves = legalMoves
+    };
   }
-  public IEnumerable<LegalMovesResponseDto> GetLegalMovesFromPiece(IPiece piece)
+  public LegalMovesResponseDto GetLegalMovesFromPiece(IPiece piece)
   {
     IEnumerable<Position> legalMoves = new List<Position>();
+
+    return new LegalMovesResponseDto
+    {
+      Moves = legalMoves
+    };
 
   }
   public bool HasCaptureMoves(IPlayer player)
   {
-
+    // TODO implement the correct logic
+    return GetLegalMovesFromPlayer(player).Moves.Any();
   }
   public bool HasAnyMoves(IPlayer player)
   {
-    
+    return GetLegalMovesFromPlayer(player).Moves.Any();
   }
-  private UpdatePiecePositionResultDto PerformMove(IPiece piece, Position to)
+
+  public static bool TryParsePosition(string input, out Position position)
   {
-    _board.Cell
+      position = default;
+
+      if (string.IsNullOrWhiteSpace(input))
+          return false;
+
+      var parts = input.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+      if (parts.Length != 2)
+          return false;
+
+      if (int.TryParse(parts[0], out int x) &&
+          int.TryParse(parts[1], out int y))
+      {
+          position = new Position(x, y);
+          return true;
+      }
+
+      return false;
+  }
+
+  private UpdatePiecePositionResultDto PerformMove(IPiece piece, Position from, Position to)
+  {
+    _board.Cell[to.X, to.Y].Piece = piece;
+
+    _board.Cell[from.X, from.Y].Piece = null;
+
+    return new UpdatePiecePositionResultDto
+    {
+      MovementSucceed = true
+    };
   }
   private void SwitchTurn()
   {

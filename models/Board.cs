@@ -15,6 +15,8 @@ public class Board : IBoard
     {
       for (int column = 0; column < boardSize; column++)
       {
+        Cell[row, column] = new Cell(new Position(row, column), null);
+
         if ((row + column) % 2 == 1)
         {
           if (row < 3)

@@ -7,8 +7,8 @@ public interface IGameService
     public UpdatePiecePositionResultDto TryMove(UpdatePiecePositionDto dto);
     public IPiece? GetPieceAt(Position position);
     public IEnumerable<IPiece> AllPieces();
-    public IEnumerable<LegalMovesResponseDto> GetLegalMovesFromPlayer(IPlayer player);
-    public IEnumerable<LegalMovesResponseDto> GetLegalMovesFromPiece(IPiece piece);
+    public LegalMovesResponseDto GetLegalMovesFromPlayer(IPlayer player);
+    public LegalMovesResponseDto GetLegalMovesFromPiece(IPiece piece);
     public bool HasCaptureMoves(IPlayer player);
     public bool HasAnyMoves(IPlayer player);
 

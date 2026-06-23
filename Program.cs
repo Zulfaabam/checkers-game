@@ -8,6 +8,18 @@ class Program {
 
         IBoard board = new Board(BoardSize.Standard, [player1, player2]);
 
+        var controller = new GameController(new GameService(board, [player1, player2]));
+
+        // Console.WriteLine(board.Cell[0, 1].Piece?.Color);
+
+        controller.Start(new CreateGameDto
+        {
+            PlayerOneName = player1.Name,
+            PlayerTwoName = player2.Name,
+            PlayerOnePreferenceColor = player1.Color,
+            PlayerTwoPreferenceColor = player2.Color,
+            Size = BoardSize.Standard
+        });
     }
 }
 
