@@ -32,12 +32,6 @@ public class GameService : IGameService
   }
   public UpdatePiecePositionResultDto TryMove(UpdatePiecePositionDto dto)
   {
-    int fromX = dto.FromPosition.X;
-    int fromY = dto.FromPosition.Y;
-
-    int toX = dto.ToPosition.X;
-    int toY = dto.ToPosition.Y;
-
     // check from and to positions are inside the board
     if (!IsInside(dto.FromPosition) || !IsInside(dto.ToPosition))
     {
@@ -58,10 +52,8 @@ public class GameService : IGameService
       };
     }
 
-    // check the piece type and color
-
     // check if the move is legal
-    var legalMoves = GetLegalMovesFromPiece(piece);
+    var legalMoves = GetLegalMoves(dto.FromPosition);
 
     if (!legalMoves.Moves.Contains(dto.ToPosition))
     {
@@ -112,7 +104,45 @@ public class GameService : IGameService
     {
       Moves = legalMoves
     };
+  }
+  public LegalMovesResponseDto GetLegalMoves(Position piecePosition)
+  {
+    var piece = GetPieceAt(piecePosition) ?? throw new ArgumentException("Invalid piece position");
+    List<Position> legalMoves = new List<Position>();
 
+    if (CurrentPlayer.IsPlayerOne)
+    {
+      if (piece.PieceType == PieceType.Man)
+      {
+        legalMoves.Add(new Position(piecePosition.X - 1, piecePosition.Y - 1));
+        legalMoves.Add(new Position(piecePosition.X - 1, piecePosition.Y + 1));
+      }
+      else if (piece.PieceType == PieceType.King)
+      {
+        legalMoves.Add(new Position(piecePosition.X - 1, piecePosition.Y - 1));
+        legalMoves.Add(new Position(piecePosition.X - 1, piecePosition.Y + 1));
+        legalMoves.Add(new Position(piecePosition.X + 1, piecePosition.Y - 1));
+        legalMoves.Add(new Position(piecePosition.X + 1, piecePosition.Y + 1));
+      }
+    } else if (!CurrentPlayer.IsPlayerOne)
+    {
+      if (piece.PieceType == PieceType.Man)
+      {
+        legalMoves.Add(new Position(piecePosition.X + 1, piecePosition.Y - 1));
+        legalMoves.Add(new Position(piecePosition.X + 1, piecePosition.Y + 1));
+      } else if (piece.PieceType == PieceType.King)
+      {
+        legalMoves.Add(new Position(piecePosition.X - 1, piecePosition.Y - 1));
+        legalMoves.Add(new Position(piecePosition.X - 1, piecePosition.Y + 1));
+        legalMoves.Add(new Position(piecePosition.X + 1, piecePosition.Y - 1));
+        legalMoves.Add(new Position(piecePosition.X + 1, piecePosition.Y + 1));
+      }
+    }
+
+    return new LegalMovesResponseDto
+    {
+        Moves = legalMoves
+    };
   }
   public bool HasCaptureMoves(IPlayer player)
   {
