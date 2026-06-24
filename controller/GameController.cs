@@ -1,74 +1,107 @@
 public class GameController
 {
-    private IGameService _gameService;
+  private IGameService _gameService;
 
-    // public event EventHandler~MoveEventArgs~? MoveMade
-    // public event EventHandler~GameEndedEventArgs~? GameEnded
+  public event EventHandler<MoveEventArgs>? MoveMade;
+  public event EventHandler<GameEndedEventArgs>? GameEnded;
 
-    public GameController(IGameService gameService)
+  public GameController(IGameService gameService)
+  {
+    _gameService = gameService;
+  }
+
+  public GameResponseDto Start(CreateGameDto dto)
+  {
+    GameResponseDto res = _gameService.InitializeBoard(dto);
+
+    var consoleRenderer = new ConsoleRenderer(res.Board, this);
+    MoveMade += consoleRenderer.MoveEvent;
+
+    while( res.Winner == null )
     {
-        _gameService = gameService;
-    }
+      IPlayer player = _gameService.CurrentPlayer;
 
-    public GameResponseDto Start(CreateGameDto dto)
-    {
-        var res = _gameService.InitializeBoard(dto);
+      consoleRenderer.Render(player);
 
-        var consoleRenderer = new ConsoleRenderer(res.Board, this);
-        
-        while (res.Winner == null)
+      Position fromPosition = consoleRenderer.ReadChoosenPiecePosition();
+
+      IPiece movedPiece = _gameService.GetPieceAt(fromPosition);
+
+      LegalMovesResponseDto legalMoves = GetLegalMoves(fromPosition);
+
+      Position toPosition = consoleRenderer.ReadMoveFromConsole(legalMoves);
+
+      var updatePiecePosition = new UpdatePiecePositionDto
+      {
+        FromPosition = fromPosition,
+        ToPosition = toPosition,
+      };
+
+      UpdatePiecePositionResultDto moveResult = _gameService.TryMove(updatePiecePosition);
+
+      if( !moveResult.MovementSucceed )
+      {
+        Console.WriteLine("Invalid move");
+        continue;
+      }
+
+      if( movedPiece != null )
+      {
+        MoveMade?.Invoke(this, new MoveEventArgs
         {
-            consoleRenderer.Render();
+          Player = player,
+          FromPosition = fromPosition,
+          ToPosition = toPosition,
+          Piece = movedPiece,
+          Crowned = moveResult.Crowned
+        });
+      }
 
-            var move = consoleRenderer.ReadMoveFromConsole();
-            
-            var moveResult = _gameService.TryMove(move);
-
-            if (!moveResult.MovementSucceed)
-            {
-                Console.WriteLine("Invalid move");
-                continue;
-            }
-
-            res = new GameResponseDto
-            {
-                CurrentPlayer = moveResult.CurrentPlayer,
-                Winner = moveResult.Winner,
-                Board = moveResult.Board
-            };
-        }
-
-        return res;
+      res = new GameResponseDto
+      {
+        CurrentPlayer = moveResult.CurrentPlayer,
+        Winner = moveResult.Winner,
+        Board = moveResult.Board
+      };
     }
 
-    public LegalMovesResponseDto GetLegalMoves(Position piecePosition)
+    return res;
+  }
+
+  public LegalMovesResponseDto GetLegalMoves(Position piecePosition)
+  {
+    return _gameService.GetLegalMoves(piecePosition) ?? new LegalMovesResponseDto();
+  }
+
+  public GameResponseDto Move(UpdatePiecePositionDto dto)
+  {
+    var player = _gameService.CurrentPlayer;
+    var movedPiece = _gameService.GetPieceAt(dto.FromPosition);
+    UpdatePiecePositionResultDto res = _gameService.TryMove(dto);
+
+    if( !res.MovementSucceed )
+      throw new InvalidOperationException("Invalid move");
+
+    if( movedPiece != null )
     {
-        var piece = _gameService.GetPieceAt(piecePosition);
-        
-        if (piece == null)
-            throw new ArgumentException("Invalid piece position");
-
-        return _gameService.GetLegalMovesFromPiece(piece) ?? new LegalMovesResponseDto();
+      MoveMade?.Invoke(this, new MoveEventArgs
+      {
+        Player = player,
+        FromPosition = dto.FromPosition,
+        ToPosition = dto.ToPosition,
+        Piece = movedPiece,
+        Crowned = res.Crowned
+      });
     }
 
-    public GameResponseDto Move(UpdatePiecePositionDto dto)
-    {
-        var res = _gameService.TryMove(dto);
-            
-        if (!res.MovementSucceed)
-            throw new InvalidOperationException("Invalid move");
+    return new GameResponseDto { CurrentPlayer = _gameService.CurrentPlayer, Winner = res.Winner, Board = res.Board };
+  }
 
-        return new GameResponseDto
-        {
-            CurrentPlayer = _gameService.CurrentPlayer,
-            Winner = res.Winner,
-            Board = res.Board
-        };
-    }
+  public GameResponseDto Restart()
+  {
+    Console.Clear();
+    Console.WriteLine("Restarting game...");
 
-    public GameResponseDto Restart()
-    {
-        // Implementation for restarting the game
-        throw new NotImplementedException();
-    }
+    return Start(null);
+  }
 }
