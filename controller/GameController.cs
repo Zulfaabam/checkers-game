@@ -27,6 +27,13 @@ public class GameController
 
       IPiece movedPiece = _gameService.GetPieceAt(fromPosition);
 
+      while (movedPiece == null || movedPiece.Color != player.Color)
+      {
+        Console.WriteLine("Invalid piece position. Choose a valid piece");
+        fromPosition = consoleRenderer.ReadChoosenPiecePosition();
+        movedPiece = _gameService.GetPieceAt(fromPosition);
+      }
+
       LegalMovesResponseDto legalMoves = GetLegalMoves(fromPosition);
 
       Position toPosition = consoleRenderer.ReadMoveFromConsole(legalMoves);

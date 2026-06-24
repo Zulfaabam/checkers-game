@@ -117,30 +117,30 @@ public class GameService : IGameService
     {
       if (piece.PieceType == PieceType.Man)
       {
-        legalMoves.Add(new Position(piecePosition.X - 1, piecePosition.Y - 1));
-        legalMoves.Add(new Position(piecePosition.X - 1, piecePosition.Y + 1));
+        EvaluateMoveDirection(piecePosition, -1, -1, legalMoves);
+        EvaluateMoveDirection(piecePosition, -1, 1, legalMoves);
       }
       else if (piece.PieceType == PieceType.King)
       {
-        legalMoves.Add(new Position(piecePosition.X - 1, piecePosition.Y - 1));
-        legalMoves.Add(new Position(piecePosition.X - 1, piecePosition.Y + 1));
-        legalMoves.Add(new Position(piecePosition.X + 1, piecePosition.Y - 1));
-        legalMoves.Add(new Position(piecePosition.X + 1, piecePosition.Y + 1));
+        EvaluateMoveDirection(piecePosition, -1, -1, legalMoves);
+        EvaluateMoveDirection(piecePosition, -1, 1, legalMoves);
+        EvaluateMoveDirection(piecePosition, 1, -1, legalMoves);
+        EvaluateMoveDirection(piecePosition, 1, 1, legalMoves);
       }
     }
-    else if (!CurrentPlayer.IsPlayerOne)
+    else
     {
       if (piece.PieceType == PieceType.Man)
       {
-        legalMoves.Add(new Position(piecePosition.X + 1, piecePosition.Y - 1));
-        legalMoves.Add(new Position(piecePosition.X + 1, piecePosition.Y + 1));
+        EvaluateMoveDirection(piecePosition, 1, -1, legalMoves);
+        EvaluateMoveDirection(piecePosition, 1, 1, legalMoves);
       }
       else if (piece.PieceType == PieceType.King)
       {
-        legalMoves.Add(new Position(piecePosition.X - 1, piecePosition.Y - 1));
-        legalMoves.Add(new Position(piecePosition.X - 1, piecePosition.Y + 1));
-        legalMoves.Add(new Position(piecePosition.X + 1, piecePosition.Y - 1));
-        legalMoves.Add(new Position(piecePosition.X + 1, piecePosition.Y + 1));
+        EvaluateMoveDirection(piecePosition, -1, -1, legalMoves);
+        EvaluateMoveDirection(piecePosition, -1, 1, legalMoves);
+        EvaluateMoveDirection(piecePosition, 1, -1, legalMoves);
+        EvaluateMoveDirection(piecePosition, 1, 1, legalMoves);
       }
     }
 
@@ -200,5 +200,25 @@ public class GameService : IGameService
       && position.X < (int)_board.Size
       && position.Y >= 0
       && position.Y < (int)_board.Size;
+  }
+
+  private void EvaluateMoveDirection(Position currentPos, int dx, int dy, List<Position> legalMoves)
+  {
+    var targetPos = new Position(currentPos.X + dx, currentPos.Y + dy);
+    if (!IsInside(targetPos)) return;
+
+    var pieceAtTarget = GetPieceAt(targetPos);
+    if (pieceAtTarget == null)
+    {
+      legalMoves.Add(targetPos);
+    }
+    else if (pieceAtTarget.Color != CurrentPlayer.Color)
+    {
+      var jumpPos = new Position(currentPos.X + dx * 2, currentPos.Y + dy * 2);
+      if (IsInside(jumpPos) && GetPieceAt(jumpPos) == null)
+      {
+        legalMoves.Add(jumpPos);
+      }
+    }
   }
 }
