@@ -4,7 +4,6 @@ public class GameService : IGameService
   private List<IPlayer> _players;
 
   public IPlayer CurrentPlayer { get; set; }
-
   public Dictionary<IPlayer, List<IPiece>> PlayersPieces { get; set; }
 
   public GameService(IBoard board, List<IPlayer> players)
@@ -66,18 +65,17 @@ public class GameService : IGameService
       return new UpdatePiecePositionResultDto { MovementSucceed = false };
     }
 
-    // check if the move resulted in a capture
-
-    // check if the move resulted in a promotion
-
     // perform the move
-    PerformMove(piece, dto.FromPosition, dto.ToPosition);
+    UpdatePiecePositionResultDto res = PerformMove(piece, dto.FromPosition, dto.ToPosition);
 
-    // switch turn
-    SwitchTurn();
+    if (res.MovementSucceed) SwitchTurn();
 
     // return the result
-    return new UpdatePiecePositionResultDto { MovementSucceed = true };
+    return new UpdatePiecePositionResultDto 
+    { 
+      MovementSucceed = res.MovementSucceed,
+      Captured = res.Captured,
+    };
   }
 
   public IPiece? GetPieceAt(Position position)
@@ -182,11 +180,29 @@ public class GameService : IGameService
 
   private UpdatePiecePositionResultDto PerformMove(IPiece piece, Position from, Position to)
   {
+    List<IPiece> jumpedPieces = new List<IPiece>();
+
+    // check if captured any piece
+    if (Math.Abs(to.X - from.X) > 1)
+    {
+      int jumpedX = from.X + (to.X - from.X) / 2;
+      int jumpedY = from.Y + (to.Y - from.Y) / 2;
+
+      jumpedPieces.Add(_board.Cell[jumpedX, jumpedY].Piece);
+    }
+    // after one check, check again if can capture again
+
+    // check promotion
+
     _board.Cell[to.X, to.Y].Piece = piece;
 
     _board.Cell[from.X, from.Y].Piece = null;
 
-    return new UpdatePiecePositionResultDto { MovementSucceed = true };
+    return new UpdatePiecePositionResultDto 
+    { 
+      MovementSucceed = true, 
+      Captured = jumpedPieces.Count > 0 
+    };
   }
 
   private void SwitchTurn()
@@ -215,10 +231,17 @@ public class GameService : IGameService
     else if (pieceAtTarget.Color != CurrentPlayer.Color)
     {
       var jumpPos = new Position(currentPos.X + dx * 2, currentPos.Y + dy * 2);
+      
       if (IsInside(jumpPos) && GetPieceAt(jumpPos) == null)
       {
         legalMoves.Add(jumpPos);
       }
     }
   }
+
+  private bool CanCaptureAgain(IPiece piece, Position currentPosition)
+{
+    LegalMovesResponseDto? legalMoves = GetLegalMoves(currentPosition);
+    return legalMoves.Moves.Any();
+}
 }
