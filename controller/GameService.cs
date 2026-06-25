@@ -88,8 +88,7 @@ public class GameService : IGameService
     return _board
       .Cell.OfType<ICell>()
       .Where(cell => cell.Piece != null)
-      .Select(cell => cell.Piece!)
-      .ToList();
+      .Select(cell => cell.Piece!);
   }
 
   public LegalMovesResponseDto GetLegalMovesFromPlayer(IPlayer player)
@@ -145,15 +144,23 @@ public class GameService : IGameService
     return new LegalMovesResponseDto { Moves = legalMoves };
   }
 
-  public bool HasCaptureMoves(IPlayer player)
+  public bool PlayerHasCaptureMoves(IPlayer player)
   {
-    // TODO implement the correct logic
-    return GetLegalMovesFromPlayer(player).Moves.Any();
+    return _board
+      .Cell.OfType<ICell>()
+      .Where(cell => cell.Piece != null && cell.Piece.Color == player.Color)
+      .Any(cell => GetLegalMoves(cell.Position).Moves
+        .Any(move => Math.Abs(move.X - cell.Position.X) > 1)
+      );
   }
 
-  public bool HasAnyMoves(IPlayer player)
+  public bool PlayerHasAnyMoves(IPlayer player)
   {
-    return GetLegalMovesFromPlayer(player).Moves.Any();
+    return _board
+      .Cell.OfType<ICell>()
+      .Where(cell => cell.Piece != null && cell.Piece.Color == player.Color)
+      .Select(cell => GetLegalMoves(cell.Position))
+      .Any(m => m.Moves.Any());
   }
 
   public static bool TryParsePosition(string input, out Position position)
@@ -162,7 +169,7 @@ public class GameService : IGameService
 
     if (string.IsNullOrWhiteSpace(input)) return false;
 
-    var parts = input.Split(
+    string[] parts = input.Split(
       ',',
       StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries
     );
@@ -180,19 +187,35 @@ public class GameService : IGameService
 
   private UpdatePiecePositionResultDto PerformMove(IPiece piece, Position from, Position to)
   {
-    List<IPiece> jumpedPieces = new List<IPiece>();
+    List<IPiece> jumpedPieces = [];
 
     // check if captured any piece
     if (Math.Abs(to.X - from.X) > 1)
     {
       int jumpedX = from.X + (to.X - from.X) / 2;
       int jumpedY = from.Y + (to.Y - from.Y) / 2;
+      
+      IPiece? jumpedPiece = _board.Cell[jumpedX, jumpedY].Piece;
 
-      jumpedPieces.Add(_board.Cell[jumpedX, jumpedY].Piece);
+      if (jumpedPiece != null)
+      {
+        jumpedPieces.Add(jumpedPiece);
+        _board.Cell[jumpedX, jumpedY].Piece = null;
+        PlayersPieces[CurrentPlayer].Remove(jumpedPiece);
+      }
     }
-    // after one check, check again if can capture again
 
-    // check promotion
+    // after one check, check again if can capture again
+    // while(CanCaptureAgain(piece, to))
+    // {
+      
+    // }
+
+    if ((to.X == 0 && CurrentPlayer.IsPlayerOne) || 
+      (to.X == (int)_board.Size - 1 && !CurrentPlayer.IsPlayerOne))
+    {
+      piece.PieceType = PieceType.King;
+    }
 
     _board.Cell[to.X, to.Y].Piece = piece;
 
@@ -240,8 +263,8 @@ public class GameService : IGameService
   }
 
   private bool CanCaptureAgain(IPiece piece, Position currentPosition)
-{
+  {
     LegalMovesResponseDto? legalMoves = GetLegalMoves(currentPosition);
     return legalMoves.Moves.Any();
-}
+  }
 }

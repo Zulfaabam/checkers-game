@@ -20,12 +20,28 @@ public class GameController
     while( res.Winner == null )
     {
       IPlayer player = _gameService.CurrentPlayer;
+      IPiece? movedPiece = null;
 
       consoleRenderer.Render(player);
 
+      // if player doesn't have any move, end the game
+      // if (!_gameService.PlayerHasAnyMoves(player))
+      // {
+        
+      // }
+
+      // if player has capture moves, force the player to make a capture move
+      // if (_gameService.PlayerHasCaptureMoves(player))
+      // {
+      //   Console.WriteLine("You must capture the piece");
+      //   piecePos = 
+      //   targetPos =
+      //   movedPiece = 
+      // }
+
       Position fromPosition = consoleRenderer.ReadChoosenPiecePosition();
 
-      IPiece movedPiece = _gameService.GetPieceAt(fromPosition);
+      movedPiece = _gameService.GetPieceAt(fromPosition);
 
       while (movedPiece == null || movedPiece.Color != player.Color)
       {
