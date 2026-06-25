@@ -58,16 +58,14 @@ public class GameService : IGameService
       return new UpdatePiecePositionResultDto { MovementSucceed = false };
     }
 
-    // perform the move
     UpdatePiecePositionResultDto res = PerformMove(piece, dto.FromPosition, dto.ToPosition);
 
-    if (res.MovementSucceed) SwitchTurn();
-
-    // return the result
     return new UpdatePiecePositionResultDto 
     { 
       MovementSucceed = res.MovementSucceed,
       Captured = res.Captured,
+      Crowned = res.Crowned,
+      HasMoreCaptures = res.HasMoreCaptures,
     };
   }
 
@@ -139,17 +137,19 @@ public class GameService : IGameService
     return new LegalMovesResponseDto { Moves = legalMoves };
   }
 
-  public LegalMovesResponseDto PlayerHasCaptureMoves(IPlayer player)
+  public Dictionary<Position, List<Position>> PlayerHasCaptureMoves(IPlayer player)
   {
-    return new LegalMovesResponseDto
-    {
-      Moves = _board
-      .Cell.OfType<ICell>()
+    return _board.Cell.OfType<ICell>()
       .Where(cell => cell.Piece != null && cell.Piece.Color == player.Color)
-      .SelectMany(cell => GetLegalMoves(cell.Position).Moves
-        .Where(move => Math.Abs(move.X - cell.Position.X) > 1)
-      )
-    };
+      .Select(cell => new 
+      { 
+        From = cell.Position, 
+        Captures = GetLegalMoves(cell.Position).Moves
+          .Where(move => Math.Abs(move.X - cell.Position.X) > 1)
+          .ToList()
+      })
+      .Where(x => x.Captures.Any())
+      .ToDictionary(x => x.From, x => x.Captures);
   }
 
   public bool PlayerHasAnyMoves(IPlayer player)
@@ -186,6 +186,15 @@ public class GameService : IGameService
   private UpdatePiecePositionResultDto PerformMove(IPiece piece, Position from, Position to)
   {
     List<IPiece> jumpedPieces = [];
+    bool isCaptured = false;
+    bool isCrowned = false;
+
+    if ((to.X == 0 && CurrentPlayer.IsPlayerOne) || 
+      (to.X == (int)_board.Size - 1 && !CurrentPlayer.IsPlayerOne))
+    {
+      piece.PieceType = PieceType.King;
+      isCrowned = true;
+    }
 
     // check if captured any piece
     if (Math.Abs(to.X - from.X) > 1)
@@ -194,35 +203,29 @@ public class GameService : IGameService
       int jumpedY = from.Y + (to.Y - from.Y) / 2;
       
       IPiece? jumpedPiece = _board.Cell[jumpedX, jumpedY].Piece;
-
       if (jumpedPiece != null)
       {
         jumpedPieces.Add(jumpedPiece);
         _board.Cell[jumpedX, jumpedY].Piece = null;
         PlayersPieces[CurrentPlayer].Remove(jumpedPiece);
+        isCaptured = true;
       }
     }
 
-    // after one check, check again if can capture again
-    // while(CanCaptureAgain(piece, to))
-    // {
-      
-    // }
-
-    if ((to.X == 0 && CurrentPlayer.IsPlayerOne) || 
-      (to.X == (int)_board.Size - 1 && !CurrentPlayer.IsPlayerOne))
-    {
-      piece.PieceType = PieceType.King;
-    }
-
     _board.Cell[to.X, to.Y].Piece = piece;
-
     _board.Cell[from.X, from.Y].Piece = null;
+
+    // Check if a double-jump is possible
+    bool canCaptureAgain = isCaptured && CanCaptureAgain(to);
+
+    if (!canCaptureAgain) SwitchTurn();
 
     return new UpdatePiecePositionResultDto 
     { 
       MovementSucceed = true, 
-      Captured = jumpedPieces.Count > 0 
+      Captured = isCaptured,
+      Crowned = isCrowned,
+      HasMoreCaptures = canCaptureAgain,
     };
   }
 
@@ -260,9 +263,11 @@ public class GameService : IGameService
     }
   }
 
-  private bool CanCaptureAgain(IPiece piece, Position currentPosition)
-  {
-    LegalMovesResponseDto? legalMoves = GetLegalMoves(currentPosition);
-    return legalMoves.Moves.Any();
-  }
+  private bool CanCaptureAgain(Position currentPosition)
+{
+    LegalMovesResponseDto legalMoves = GetLegalMoves(currentPosition);
+    
+    return legalMoves.Moves.Any(move => Math.Abs(move.X - currentPosition.X) > 1);
+}
+
 }

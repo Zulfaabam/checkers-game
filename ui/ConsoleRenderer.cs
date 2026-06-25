@@ -79,53 +79,101 @@ public class ConsoleRenderer
   public Position ReadMoveFromConsole(LegalMovesResponseDto legalMoves)
   {
     Console.ForegroundColor = ConsoleColor.Green;
+    List<Position> moves = legalMoves.Moves.ToList();
+
+    if (moves.Count == 0)
+    {
+      throw new InvalidOperationException("No legal moves available.");
+    }
+
+    if (moves.Count == 1)
+    {
+      Console.Write($"Only one move available to ({moves[0].X},{moves[0].Y}). Press Enter to confirm: ");
+      Console.ReadLine();
+      return moves[0];
+    }
+
+    Console.WriteLine("Legal moves:");
+    for (int i = 0; i < moves.Count; i++)
+    {
+      Console.WriteLine($"{i + 1}. Move to ({moves[i].X},{moves[i].Y})");
+    }
 
     while (true)
     {
-      Console.WriteLine("Legal moves:");
+      Console.Write($"Choose move (1-{moves.Count}) [Default is 1, press Enter]: ");
+      string input = Console.ReadLine() ?? "";
 
-      foreach (Position pos in legalMoves.Moves)
+      if (string.IsNullOrWhiteSpace(input))
       {
-        Console.WriteLine($"- {pos.X},{pos.Y}");
+        return moves[0];
       }
 
-      Console.Write("Where to move (ex. 0,1):");
-      string endPosition = Console.ReadLine();
-
-      if( GameService.TryParsePosition(endPosition, out Position to) )
+      if (int.TryParse(input, out int choice) && choice >= 1 && choice <= moves.Count)
       {
-        if( legalMoves.Moves.Contains(to) )
-        {
-          return new Position(to.X, to.Y);
-        }
-        else
-        {
-          Console.ForegroundColor = ConsoleColor.Red;
-          Console.WriteLine("Invalid move. Choose a valid position");
-          Console.ForegroundColor = ConsoleColor.Green;
-        }
-      } 
-      else
-      {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine("Invalid position format. Use x,y like 2,3.");
-        Console.ForegroundColor = ConsoleColor.Green;
+        return moves[choice - 1];
       }
+
+      Console.ForegroundColor = ConsoleColor.Red;
+      Console.WriteLine("Invalid selection. Please choose a valid number.");
+      Console.ForegroundColor = ConsoleColor.Green;
     }
   }
 
-  public void ForceCaptureMove(IPlayer player, LegalMovesResponseDto legalMoves)
+  public void ForceCaptureMove(IPlayer player, Dictionary<Position, List<Position>> captureMoves)
   {
     Console.ForegroundColor = ConsoleColor.Yellow;
-    Console.WriteLine($"{player.Name} has capture moves from: ... to:");
+    Console.WriteLine($"{player.Name} has capture moves:");
 
-    foreach (Position pos in legalMoves.Moves)
+    foreach (var kvp in captureMoves)
     {
-      Console.WriteLine($"- {pos.X},{pos.Y}");
+      Position from = kvp.Key;
+      foreach (Position to in kvp.Value)
+      {
+        Console.WriteLine($"- From {from.X},{from.Y} to {to.X},{to.Y}");
+      }
     }
 
     Console.WriteLine($"You must capture the piece.");
     Console.ForegroundColor = ConsoleColor.Green;
+  }
+
+  public Position ReadForcedCapturePiece(Dictionary<Position, List<Position>> captureMoves)
+  {
+    List<Position> forcedPieces = captureMoves.Keys.ToList();
+
+    if (forcedPieces.Count == 1)
+    {
+      Console.Write($"Piece at ({forcedPieces[0].X},{forcedPieces[0].Y}) must capture. Press Enter to select: ");
+      Console.ReadLine();
+      return forcedPieces[0];
+    }
+
+    Console.WriteLine("Multiple pieces can capture. Choose one to move:");
+    for (int i = 0; i < forcedPieces.Count; i++)
+    {
+      Console.WriteLine($"{i + 1}. Piece at ({forcedPieces[i].X},{forcedPieces[i].Y})");
+    }
+
+    while (true)
+    {
+      Console.Write($"Enter number (1-{forcedPieces.Count}) [Default is 1, press Enter]: ");
+      string input = Console.ReadLine() ?? "";
+
+      if (string.IsNullOrWhiteSpace(input))
+      {
+        return forcedPieces[0];
+      }
+
+      if (int.TryParse(input, out int choice) && choice >= 1 && choice <= forcedPieces.Count)
+      {
+        return forcedPieces[choice - 1];
+      }
+
+      Console.ForegroundColor = ConsoleColor.Red;
+      Console.WriteLine("Invalid selection. Please choose a valid number.");
+      Console.ForegroundColor = ConsoleColor.Green;
+    }
   }
 
   public void MoveEvent(object? o, MoveEventArgs args)

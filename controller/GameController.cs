@@ -22,36 +22,41 @@ public class GameController
       IPlayer player = _gameService.CurrentPlayer;
       IPiece? movedPiece = null;
       Position fromPosition = default;
+      LegalMovesResponseDto legalMoves;
 
       consoleRenderer.Render(player);
 
       // if player doesn't have any move, end the game
       // if (!_gameService.PlayerHasAnyMoves(player))
       // {
-        
+
       // }
 
       // if player has capture moves, force the player to make a capture move
-      if (_gameService.PlayerHasCaptureMoves(player).Moves.Any())
+      Dictionary<Position, List<Position>> captureMoves = _gameService.PlayerHasCaptureMoves(player);
+      if (captureMoves.Count > 0)
       {
-        LegalMovesResponseDto captureMoves = _gameService.PlayerHasCaptureMoves(player);
         consoleRenderer.ForceCaptureMove(player, captureMoves); 
+        fromPosition = consoleRenderer.ReadForcedCapturePiece(captureMoves);
+        movedPiece = _gameService.GetPieceAt(fromPosition);
+        legalMoves = new LegalMovesResponseDto { Moves = captureMoves[fromPosition] };
       }
-
-      fromPosition = consoleRenderer.ReadChoosenPiecePosition();
-
-      movedPiece = _gameService.GetPieceAt(fromPosition);
-
-      while (movedPiece == null || movedPiece.Color != player.Color)
+      else
       {
-        Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine("Wrong piece! Please choose your piece");
-        Console.ForegroundColor = ConsoleColor.Green;
         fromPosition = consoleRenderer.ReadChoosenPiecePosition();
         movedPiece = _gameService.GetPieceAt(fromPosition);
-      }
 
-      LegalMovesResponseDto legalMoves = GetLegalMoves(fromPosition);
+        while (movedPiece == null || movedPiece.Color != player.Color)
+        {
+          Console.ForegroundColor = ConsoleColor.Red;
+          Console.WriteLine("Wrong piece! Please choose your piece");
+          Console.ForegroundColor = ConsoleColor.Green;
+          fromPosition = consoleRenderer.ReadChoosenPiecePosition();
+          movedPiece = _gameService.GetPieceAt(fromPosition);
+        }
+
+        legalMoves = GetLegalMoves(fromPosition);
+      }
 
       Position toPosition = consoleRenderer.ReadMoveFromConsole(legalMoves);
 

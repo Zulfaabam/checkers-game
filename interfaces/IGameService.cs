@@ -10,7 +10,7 @@ public interface IGameService
     public LegalMovesResponseDto GetLegalMoves(Position piecePosition);
     public LegalMovesResponseDto GetLegalMovesFromPlayer(IPlayer player);
     public LegalMovesResponseDto GetLegalMovesFromPiece(IPiece piece);
-    public LegalMovesResponseDto PlayerHasCaptureMoves(IPlayer player);
+    public Dictionary<Position, List<Position>> PlayerHasCaptureMoves(IPlayer player);
     public bool PlayerHasAnyMoves(IPlayer player);
 
 }
