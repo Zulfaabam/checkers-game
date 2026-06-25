@@ -50,13 +50,6 @@ public class GameService : IGameService
       return new UpdatePiecePositionResultDto { MovementSucceed = false };
     }
 
-    // IPiece? enemyPiece = GetPieceAt(dto.ToPosition);
-    //
-    // if( enemyPiece != null )
-    // {
-    //
-    // }
-
     // check all legal moves
     LegalMovesResponseDto legalMoves = GetLegalMoves(dto.FromPosition);
 
@@ -107,8 +100,10 @@ public class GameService : IGameService
 
   public LegalMovesResponseDto GetLegalMoves(Position piecePosition)
   {
-    var piece = GetPieceAt(piecePosition) ?? throw new ArgumentException("Invalid piece position");
-    List<Position> legalMoves = new List<Position>();
+    IPiece? piece = GetPieceAt(piecePosition);
+    List<Position> legalMoves = [];
+
+    if (piece == null) return new LegalMovesResponseDto { Moves = legalMoves };
 
     if (CurrentPlayer.IsPlayerOne)
     {
@@ -144,14 +139,17 @@ public class GameService : IGameService
     return new LegalMovesResponseDto { Moves = legalMoves };
   }
 
-  public bool PlayerHasCaptureMoves(IPlayer player)
+  public LegalMovesResponseDto PlayerHasCaptureMoves(IPlayer player)
   {
-    return _board
+    return new LegalMovesResponseDto
+    {
+      Moves = _board
       .Cell.OfType<ICell>()
       .Where(cell => cell.Piece != null && cell.Piece.Color == player.Color)
-      .Any(cell => GetLegalMoves(cell.Position).Moves
-        .Any(move => Math.Abs(move.X - cell.Position.X) > 1)
-      );
+      .SelectMany(cell => GetLegalMoves(cell.Position).Moves
+        .Where(move => Math.Abs(move.X - cell.Position.X) > 1)
+      )
+    };
   }
 
   public bool PlayerHasAnyMoves(IPlayer player)

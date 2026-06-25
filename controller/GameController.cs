@@ -21,6 +21,7 @@ public class GameController
     {
       IPlayer player = _gameService.CurrentPlayer;
       IPiece? movedPiece = null;
+      Position fromPosition = default;
 
       consoleRenderer.Render(player);
 
@@ -31,21 +32,21 @@ public class GameController
       // }
 
       // if player has capture moves, force the player to make a capture move
-      // if (_gameService.PlayerHasCaptureMoves(player))
-      // {
-      //   Console.WriteLine("You must capture the piece");
-      //   piecePos = 
-      //   targetPos =
-      //   movedPiece = 
-      // }
+      if (_gameService.PlayerHasCaptureMoves(player).Moves.Any())
+      {
+        LegalMovesResponseDto captureMoves = _gameService.PlayerHasCaptureMoves(player);
+        consoleRenderer.ForceCaptureMove(player, captureMoves); 
+      }
 
-      Position fromPosition = consoleRenderer.ReadChoosenPiecePosition();
+      fromPosition = consoleRenderer.ReadChoosenPiecePosition();
 
       movedPiece = _gameService.GetPieceAt(fromPosition);
 
       while (movedPiece == null || movedPiece.Color != player.Color)
       {
-        Console.WriteLine("Invalid piece position. Choose a valid piece");
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("Wrong piece! Please choose your piece");
+        Console.ForegroundColor = ConsoleColor.Green;
         fromPosition = consoleRenderer.ReadChoosenPiecePosition();
         movedPiece = _gameService.GetPieceAt(fromPosition);
       }
@@ -60,25 +61,7 @@ public class GameController
         ToPosition = toPosition,
       };
 
-      UpdatePiecePositionResultDto moveResult = _gameService.TryMove(updatePiecePosition);
-
-      if( !moveResult.MovementSucceed )
-      {
-        Console.WriteLine("Invalid move");
-        continue;
-      }
-
-      if( movedPiece != null )
-      {
-        MoveMade?.Invoke(this, new MoveEventArgs
-        {
-          Player = player,
-          FromPosition = fromPosition,
-          ToPosition = toPosition,
-          Piece = movedPiece,
-          Crowned = moveResult.Crowned
-        });
-      }
+      GameResponseDto moveResult = Move(updatePiecePosition);
 
       res = new GameResponseDto
       {
@@ -98,12 +81,14 @@ public class GameController
 
   public GameResponseDto Move(UpdatePiecePositionDto dto)
   {
-    var player = _gameService.CurrentPlayer;
-    var movedPiece = _gameService.GetPieceAt(dto.FromPosition);
+    IPlayer player = _gameService.CurrentPlayer;
+    IPiece? movedPiece = _gameService.GetPieceAt(dto.FromPosition);
     UpdatePiecePositionResultDto res = _gameService.TryMove(dto);
 
     if( !res.MovementSucceed )
-      throw new InvalidOperationException("Invalid move");
+    {
+      Console.WriteLine("Invalid move");
+    }
 
     if( movedPiece != null )
     {
@@ -117,7 +102,12 @@ public class GameController
       });
     }
 
-    return new GameResponseDto { CurrentPlayer = _gameService.CurrentPlayer, Winner = res.Winner, Board = res.Board };
+    return new GameResponseDto 
+    { 
+      CurrentPlayer = _gameService.CurrentPlayer, 
+      Winner = res.Winner, 
+      Board = res.Board 
+    };
   }
 
   public GameResponseDto Restart()

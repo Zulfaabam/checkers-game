@@ -94,13 +94,38 @@ public class ConsoleRenderer
 
       if( GameService.TryParsePosition(endPosition, out Position to) )
       {
-        return new Position(to.X, to.Y);
+        if( legalMoves.Moves.Contains(to) )
+        {
+          return new Position(to.X, to.Y);
+        }
+        else
+        {
+          Console.ForegroundColor = ConsoleColor.Red;
+          Console.WriteLine("Invalid move. Choose a valid position");
+          Console.ForegroundColor = ConsoleColor.Green;
+        }
+      } 
+      else
+      {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("Invalid position format. Use x,y like 2,3.");
+        Console.ForegroundColor = ConsoleColor.Green;
       }
-
-      Console.ForegroundColor = ConsoleColor.Red;
-      Console.WriteLine("Invalid position format. Use x,y like 2,3.");
-      Console.ForegroundColor = ConsoleColor.Green;
     }
+  }
+
+  public void ForceCaptureMove(IPlayer player, LegalMovesResponseDto legalMoves)
+  {
+    Console.ForegroundColor = ConsoleColor.Yellow;
+    Console.WriteLine($"{player.Name} has capture moves from: ... to:");
+
+    foreach (Position pos in legalMoves.Moves)
+    {
+      Console.WriteLine($"- {pos.X},{pos.Y}");
+    }
+
+    Console.WriteLine($"You must capture the piece.");
+    Console.ForegroundColor = ConsoleColor.Green;
   }
 
   public void MoveEvent(object? o, MoveEventArgs args)
