@@ -24,19 +24,26 @@ public class GameController
       Position fromPosition = default;
       LegalMovesResponseDto legalMoves;
 
-      consoleRenderer.Render(player);
+      consoleRenderer.Render();
+      consoleRenderer.RenderGameStatus(player);
 
-      // if player doesn't have any move, end the game
-      // if (!_gameService.PlayerHasAnyMoves(player))
-      // {
+      foreach( KeyValuePair<IPlayer, int> p in _gameService.PlayersPieceCount() )
+      {
+        Console.WriteLine($"{p.Key.Name} pieces: {p.Value}");
+      }
 
-      // }
+      // if player doesn't have any piece or move, end the game
+      if( !_gameService.PlayerHasAnyMoves(player) )
+      {
+        res.Winner = _gameService.GetPlayers().FirstOrDefault(p => p.Color != player.Color);
+        continue;
+      }
 
       // if player has capture moves, force the player to make a capture move
       Dictionary<Position, List<Position>> captureMoves = _gameService.PlayerHasCaptureMoves(player);
-      if (captureMoves.Count > 0)
+      if( captureMoves.Count > 0 )
       {
-        consoleRenderer.ForceCaptureMove(player, captureMoves); 
+        consoleRenderer.ForceCaptureMove(player, captureMoves);
         fromPosition = consoleRenderer.ReadForcedCapturePiece(captureMoves);
         movedPiece = _gameService.GetPieceAt(fromPosition);
         legalMoves = new LegalMovesResponseDto { Moves = captureMoves[fromPosition] };
@@ -46,7 +53,7 @@ public class GameController
         fromPosition = consoleRenderer.ReadChoosenPiecePosition();
         movedPiece = _gameService.GetPieceAt(fromPosition);
 
-        while (movedPiece == null || movedPiece.Color != player.Color)
+        while( movedPiece == null || movedPiece.Color != player.Color )
         {
           Console.ForegroundColor = ConsoleColor.Red;
           Console.WriteLine("Wrong piece! Please choose your piece");
@@ -75,6 +82,8 @@ public class GameController
         Board = moveResult.Board
       };
     }
+
+    consoleRenderer.ShowWinner(res.Winner);
 
     return res;
   }
@@ -107,11 +116,11 @@ public class GameController
       });
     }
 
-    return new GameResponseDto 
-    { 
-      CurrentPlayer = _gameService.CurrentPlayer, 
-      Winner = res.Winner, 
-      Board = res.Board 
+    return new GameResponseDto
+    {
+      CurrentPlayer = _gameService.CurrentPlayer,
+      Winner = res.Winner,
+      Board = res.Board
     };
   }
 

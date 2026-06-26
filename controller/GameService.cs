@@ -37,7 +37,7 @@ public class GameService : IGameService
   public UpdatePiecePositionResultDto TryMove(UpdatePiecePositionDto dto)
   {
     // check from and to positions are inside the board
-    if (!IsInside(dto.FromPosition) || !IsInside(dto.ToPosition))
+    if( !IsInside(dto.FromPosition) || !IsInside(dto.ToPosition) )
     {
       return new UpdatePiecePositionResultDto { MovementSucceed = false };
     }
@@ -45,7 +45,7 @@ public class GameService : IGameService
     // check if there is a piece at the from position
     IPiece? piece = GetPieceAt(dto.FromPosition);
 
-    if (piece == null)
+    if( piece == null )
     {
       return new UpdatePiecePositionResultDto { MovementSucceed = false };
     }
@@ -53,15 +53,15 @@ public class GameService : IGameService
     // check all legal moves
     LegalMovesResponseDto legalMoves = GetLegalMoves(dto.FromPosition);
 
-    if (!legalMoves.Moves.Contains(dto.ToPosition))
+    if( !legalMoves.Moves.Contains(dto.ToPosition) )
     {
       return new UpdatePiecePositionResultDto { MovementSucceed = false };
     }
 
     UpdatePiecePositionResultDto res = PerformMove(piece, dto.FromPosition, dto.ToPosition);
 
-    return new UpdatePiecePositionResultDto 
-    { 
+    return new UpdatePiecePositionResultDto
+    {
       MovementSucceed = res.MovementSucceed,
       Captured = res.Captured,
       Crowned = res.Crowned,
@@ -101,16 +101,16 @@ public class GameService : IGameService
     IPiece? piece = GetPieceAt(piecePosition);
     List<Position> legalMoves = [];
 
-    if (piece == null) return new LegalMovesResponseDto { Moves = legalMoves };
+    if( piece == null ) return new LegalMovesResponseDto { Moves = legalMoves };
 
-    if (CurrentPlayer.IsPlayerOne)
+    if( CurrentPlayer.IsPlayerOne )
     {
-      if (piece.PieceType == PieceType.Man)
+      if( piece.PieceType == PieceType.Man )
       {
         EvaluateMoveDirection(piecePosition, -1, -1, legalMoves);
         EvaluateMoveDirection(piecePosition, -1, 1, legalMoves);
       }
-      else if (piece.PieceType == PieceType.King)
+      else if( piece.PieceType == PieceType.King )
       {
         EvaluateMoveDirection(piecePosition, -1, -1, legalMoves);
         EvaluateMoveDirection(piecePosition, -1, 1, legalMoves);
@@ -120,12 +120,12 @@ public class GameService : IGameService
     }
     else
     {
-      if (piece.PieceType == PieceType.Man)
+      if( piece.PieceType == PieceType.Man )
       {
         EvaluateMoveDirection(piecePosition, 1, -1, legalMoves);
         EvaluateMoveDirection(piecePosition, 1, 1, legalMoves);
       }
-      else if (piece.PieceType == PieceType.King)
+      else if( piece.PieceType == PieceType.King )
       {
         EvaluateMoveDirection(piecePosition, -1, -1, legalMoves);
         EvaluateMoveDirection(piecePosition, -1, 1, legalMoves);
@@ -141,9 +141,9 @@ public class GameService : IGameService
   {
     return _board.Cell.OfType<ICell>()
       .Where(cell => cell.Piece != null && cell.Piece.Color == player.Color)
-      .Select(cell => new 
-      { 
-        From = cell.Position, 
+      .Select(cell => new
+      {
+        From = cell.Position,
         Captures = GetLegalMoves(cell.Position).Moves
           .Where(move => Math.Abs(move.X - cell.Position.X) > 1)
           .ToList()
@@ -161,20 +161,41 @@ public class GameService : IGameService
       .Any(m => m.Moves.Any());
   }
 
+  public List<IPlayer> GetPlayers()
+  {
+    return _players;
+  }
+
+  public IPlayer GetWinner()
+  {
+    return PlayersPieces
+    .Where(player => player.Value.Count != 0)
+    .Select(p => p.Key)
+    .First();
+  }
+
+  public Dictionary<IPlayer, int> PlayersPieceCount()
+  {
+    return PlayersPieces.ToDictionary(
+      player => player.Key,
+      player => player.Value.Count
+    );
+  }
+
   public static bool TryParsePosition(string input, out Position position)
   {
     position = default;
 
-    if (string.IsNullOrWhiteSpace(input)) return false;
+    if( string.IsNullOrWhiteSpace(input) ) return false;
 
     string[] parts = input.Split(
       ',',
       StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries
     );
 
-    if (parts.Length != 2) return false;
+    if( parts.Length != 2 ) return false;
 
-    if (int.TryParse(parts[0], out int x) && int.TryParse(parts[1], out int y))
+    if( int.TryParse(parts[0], out int x) && int.TryParse(parts[1], out int y) )
     {
       position = new Position(x, y);
       return true;
@@ -189,25 +210,31 @@ public class GameService : IGameService
     bool isCaptured = false;
     bool isCrowned = false;
 
-    if ((to.X == 0 && CurrentPlayer.IsPlayerOne) || 
-      (to.X == (int)_board.Size - 1 && !CurrentPlayer.IsPlayerOne))
+    if( ( to.X == 0 && CurrentPlayer.IsPlayerOne ) ||
+      ( to.X == (int)_board.Size - 1 && !CurrentPlayer.IsPlayerOne ) )
     {
       piece.PieceType = PieceType.King;
       isCrowned = true;
     }
 
     // check if captured any piece
-    if (Math.Abs(to.X - from.X) > 1)
+    if( Math.Abs(to.X - from.X) > 1 )
     {
-      int jumpedX = from.X + (to.X - from.X) / 2;
-      int jumpedY = from.Y + (to.Y - from.Y) / 2;
-      
+      int jumpedX = from.X + ( to.X - from.X ) / 2;
+      int jumpedY = from.Y + ( to.Y - from.Y ) / 2;
+
       IPiece? jumpedPiece = _board.Cell[jumpedX, jumpedY].Piece;
-      if (jumpedPiece != null)
+      if( jumpedPiece != null )
       {
         jumpedPieces.Add(jumpedPiece);
         _board.Cell[jumpedX, jumpedY].Piece = null;
-        PlayersPieces[CurrentPlayer].Remove(jumpedPiece);
+
+        IPlayer? owner = _players.FirstOrDefault(player => player.Color == jumpedPiece.Color);
+        if( owner != null )
+        {
+          PlayersPieces[owner].Remove(jumpedPiece);
+        }
+
         isCaptured = true;
       }
     }
@@ -215,17 +242,20 @@ public class GameService : IGameService
     _board.Cell[to.X, to.Y].Piece = piece;
     _board.Cell[from.X, from.Y].Piece = null;
 
+
+
     // Check if a double-jump is possible
     bool canCaptureAgain = isCaptured && CanCaptureAgain(to);
 
-    if (!canCaptureAgain) SwitchTurn();
+    if( !canCaptureAgain ) SwitchTurn();
 
-    return new UpdatePiecePositionResultDto 
-    { 
-      MovementSucceed = true, 
+    return new UpdatePiecePositionResultDto
+    {
+      MovementSucceed = true,
       Captured = isCaptured,
       Crowned = isCrowned,
       HasMoreCaptures = canCaptureAgain,
+      Winner = GetWinner()
     };
   }
 
@@ -245,18 +275,18 @@ public class GameService : IGameService
   private void EvaluateMoveDirection(Position currentPos, int dx, int dy, List<Position> legalMoves)
   {
     var targetPos = new Position(currentPos.X + dx, currentPos.Y + dy);
-    if (!IsInside(targetPos)) return;
+    if( !IsInside(targetPos) ) return;
 
     var pieceAtTarget = GetPieceAt(targetPos);
-    if (pieceAtTarget == null)
+    if( pieceAtTarget == null )
     {
       legalMoves.Add(targetPos);
     }
-    else if (pieceAtTarget.Color != CurrentPlayer.Color)
+    else if( pieceAtTarget.Color != CurrentPlayer.Color )
     {
       var jumpPos = new Position(currentPos.X + dx * 2, currentPos.Y + dy * 2);
-      
-      if (IsInside(jumpPos) && GetPieceAt(jumpPos) == null)
+
+      if( IsInside(jumpPos) && GetPieceAt(jumpPos) == null )
       {
         legalMoves.Add(jumpPos);
       }
@@ -264,10 +294,10 @@ public class GameService : IGameService
   }
 
   private bool CanCaptureAgain(Position currentPosition)
-{
+  {
     LegalMovesResponseDto legalMoves = GetLegalMoves(currentPosition);
-    
+
     return legalMoves.Moves.Any(move => Math.Abs(move.X - currentPosition.X) > 1);
-}
+  }
 
 }

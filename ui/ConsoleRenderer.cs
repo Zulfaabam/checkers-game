@@ -10,7 +10,7 @@ public class ConsoleRenderer
     _controller = controller;
   }
 
-  public void Render(IPlayer currentPlayer)
+  public void Render()
   {
     Console.Clear();
 
@@ -51,9 +51,11 @@ public class ConsoleRenderer
 
       Console.WriteLine();
     }
+  }
 
-    Console.ForegroundColor = ConsoleColor.Green;
-
+  public void RenderGameStatus(IPlayer currentPlayer)
+  {
+    Console.ForegroundColor = currentPlayer.Color;
     Console.WriteLine();
     Console.WriteLine($"Turn: {currentPlayer.Name}, Color: {currentPlayer.Color}");
   }
@@ -176,11 +178,17 @@ public class ConsoleRenderer
     }
   }
 
+  public void ShowWinner(IPlayer winner)
+  {
+    Render();
+    Console.WriteLine($"The winner is: {winner.Name}");
+  }
+
   public void MoveEvent(object? o, MoveEventArgs args)
   {
     _eventMessage =
       $"Moved piece from ({args.FromPosition.X}, {args.FromPosition.Y}) to ({args.ToPosition.X}, {args.ToPosition.Y})";
-    Render(args.Player);
+    Render();
     Console.WriteLine(_eventMessage);
   }
 }
