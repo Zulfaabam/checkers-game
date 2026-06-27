@@ -69,67 +69,33 @@ public class GameService : IGameService
 
   public UpdatePiecePositionResultDto TryMove(UpdatePiecePositionDto dto)
   {
-    // check from and to positions are inside the board
     if( !IsInside(dto.FromPosition) || !IsInside(dto.ToPosition) )
     {
-      return new UpdatePiecePositionResultDto 
-      { 
-        MovementSucceed = false,
-        Crowned = false,
-        Captured = false,
-        HasMoreCaptures = false,
-        CurrentPlayer = CurrentPlayer,
-        Winner = null,
-        Board = _board,
-      };
+      return CreateMoveResult();
     }
 
-    // check if there is a piece at the from position
     IPiece? piece = GetPieceAt(dto.FromPosition);
 
     if( piece == null )
     {
-      return new UpdatePiecePositionResultDto 
-      {
-        MovementSucceed = false,
-        Crowned = false,
-        Captured = false,
-        HasMoreCaptures = false,
-        CurrentPlayer = CurrentPlayer,
-        Winner = null,
-        Board = _board,
-      };
+      return CreateMoveResult();
     }
 
-    // check all legal moves
     LegalMovesResponseDto legalMoves = GetLegalMoves(dto.FromPosition);
 
     if( !legalMoves.Moves.Contains(dto.ToPosition) )
     {
-      return new UpdatePiecePositionResultDto 
-      {
-        MovementSucceed = false,
-        Crowned = false,
-        Captured = false,
-        HasMoreCaptures = false,
-        CurrentPlayer = CurrentPlayer,
-        Winner = null,
-        Board = _board,
-      };
+      return CreateMoveResult();
     }
 
     UpdatePiecePositionResultDto res = PerformMove(piece, dto.FromPosition, dto.ToPosition);
 
-    return new UpdatePiecePositionResultDto
-    {
-      MovementSucceed = res.MovementSucceed,
-      Captured = res.Captured,
-      Crowned = res.Crowned,
-      HasMoreCaptures = res.HasMoreCaptures,
-      CurrentPlayer = CurrentPlayer,
-      Winner = null,
-      Board = _board,
-    };
+    return CreateMoveResult(
+      res.MovementSucceed,
+      res.Crowned,
+      res.Captured,
+      res.HasMoreCaptures
+    );
   }
 
   public IPiece? GetPieceAt(Position position)
@@ -273,15 +239,19 @@ public class GameService : IGameService
     bool isCaptured = false;
     bool isCrowned = false;
 
-    if( ( to.X == 0 && CurrentPlayer.IsPlayerOne ) ||
-      ( to.X == (int)_board.Size - 1 && !CurrentPlayer.IsPlayerOne ) )
+    bool isManCrowned = piece.PieceType == PieceType.Man && 
+      ( ( to.X == 0 && CurrentPlayer.IsPlayerOne ) ||
+        ( to.X == (int)_board.Size - 1 && !CurrentPlayer.IsPlayerOne ) );
+
+    if( isManCrowned )
     {
       piece.PieceType = PieceType.King;
       isCrowned = true;
     }
 
-    // check if captured any piece
-    if( Math.Abs(to.X - from.X) > 1 )
+    bool isCapturing = Math.Abs(to.X - from.X) > 1;
+
+    if( isCapturing )
     {
       int jumpedX = from.X + ( to.X - from.X ) / 2;
       int jumpedY = from.Y + ( to.Y - from.Y ) / 2;
@@ -305,9 +275,6 @@ public class GameService : IGameService
     _board.Cell[to.X, to.Y].Piece = piece;
     _board.Cell[from.X, from.Y].Piece = null;
 
-
-
-    // Check if a double-jump is possible
     bool canCaptureAgain = isCaptured && CanCaptureAgain(to);
 
     if( !canCaptureAgain ) SwitchTurn();
@@ -339,17 +306,17 @@ public class GameService : IGameService
 
   private void EvaluateMoveDirection(Position currentPos, int dx, int dy, List<Position> legalMoves)
   {
-    var targetPos = new Position(currentPos.X + dx, currentPos.Y + dy);
+    Position targetPos = new Position(currentPos.X + dx, currentPos.Y + dy);
     if( !IsInside(targetPos) ) return;
 
-    var pieceAtTarget = GetPieceAt(targetPos);
+    IPiece? pieceAtTarget = GetPieceAt(targetPos);
     if( pieceAtTarget == null )
     {
       legalMoves.Add(targetPos);
     }
     else if( pieceAtTarget.Color != CurrentPlayer.Color )
     {
-      var jumpPos = new Position(currentPos.X + dx * 2, currentPos.Y + dy * 2);
+      Position jumpPos = new Position(currentPos.X + dx * 2, currentPos.Y + dy * 2);
 
       if( IsInside(jumpPos) && GetPieceAt(jumpPos) == null )
       {
@@ -365,4 +332,22 @@ public class GameService : IGameService
     return legalMoves.Moves.Any(move => Math.Abs(move.X - currentPosition.X) > 1);
   }
 
+  private UpdatePiecePositionResultDto CreateMoveResult(
+    bool succeed = false,
+    bool crowned = false,
+    bool captured = false,
+    bool hasMoreCaptures = false,
+    IPlayer? winner = null)
+  {
+    return new UpdatePiecePositionResultDto
+    {
+      MovementSucceed = succeed,
+      Crowned = crowned,
+      Captured = captured,
+      HasMoreCaptures = hasMoreCaptures,
+      CurrentPlayer = CurrentPlayer,
+      Winner = winner,
+      Board = _board,
+    };
+  }
 }

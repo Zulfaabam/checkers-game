@@ -21,11 +21,15 @@ public class Board : IBoard
         {
           if (row < 3)
           {
-            Cell[row, column] = new Cell(new Position(row, column), new Piece(PieceType.Man, players.First(p => !p.IsPlayerOne).Color));
+            Cell[row, column] = new Cell(
+              new Position(row, column), 
+              new Piece(PieceType.Man, players.First(p => !p.IsPlayerOne).Color));
           }
           else if (row >= boardSize - 3)
           {
-            Cell[row, column] = new Cell(new Position(row, column), new Piece(PieceType.Man, players.First(p => p.IsPlayerOne).Color));
+            Cell[row, column] = new Cell(
+              new Position(row, column), 
+              new Piece(PieceType.Man, players.First(p => p.IsPlayerOne).Color));
           }
         }
       }
