@@ -28,16 +28,16 @@ public class GameService : IGameService
   {
     BoardSize size = dto?.Size ?? BoardSize.Standard;
 
-    // Reset player details
+    // Reset player details, board size and pieces on board
     if (dto != null)
     {
-      var p1 = _players.Find(p => p.IsPlayerOne);
+      IPlayer? p1 = _players.Find(p => p.IsPlayerOne);
       if (p1 != null)
       {
         p1.Name = dto.PlayerOneName;
         p1.Color = dto.PlayerOnePreferenceColor;
       }
-      var p2 = _players.Find(p => !p.IsPlayerOne);
+      IPlayer? p2 = _players.Find(p => !p.IsPlayerOne);
       if (p2 != null)
       {
         p2.Name = dto.PlayerTwoName;
@@ -45,13 +45,10 @@ public class GameService : IGameService
       }
     }
 
-    // Recreate the board to clear pieces and set fresh positions
     _board = new Board(size, _players);
 
-    // Reset current player
     CurrentPlayer = _players.Find(p => p.IsPlayerOne) ?? _players[0];
 
-    // Reset players pieces collections
     PlayersPieces = _players.ToDictionary(
       player => player,
       player =>

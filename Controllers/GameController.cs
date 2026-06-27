@@ -30,15 +30,14 @@ public class GameController
       consoleRenderer.RenderBoard();
       consoleRenderer.RenderGameStatus(player, _gameService.PlayersPieceCount());
 
-      // if player doesn't have any piece or move, end the game
       if( !_gameService.PlayerHasAnyMoves(player) )
       {
         res.Winner = _gameService.GetPlayers().FirstOrDefault(p => p.Color != player.Color);
         continue;
       }
 
-      // if player has capture moves, force the player to make a capture move
       Dictionary<Position, List<Position>> captureMoves = _gameService.PlayerHasCaptureMoves(player);
+      
       if( captureMoves.Count > 0 )
       {
         consoleRenderer.ForceCaptureMove(player, captureMoves);
@@ -102,7 +101,7 @@ public class GameController
       Console.WriteLine("Invalid move");
     }
 
-    if( movedPiece != null )
+    if( res.MovementSucceed && movedPiece != null )
     {
       MoveMade?.Invoke(this, new MoveEventArgs
       {

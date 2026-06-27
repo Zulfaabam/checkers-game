@@ -106,9 +106,15 @@ public class ConsoleRenderer
       pieceCount[i] = $"{playersPieceCount.ElementAt(i).Key.Name} pieces: {playersPieceCount.ElementAt(i).Value}";
     }
 
-    Panel panel = new Panel($@"
-Turn: {currentPlayer.Name}, Color: {currentPlayer.Color}
-{pieceCount[0]} | {pieceCount[1]}")
+    string statusText = $@"Turn: {currentPlayer.Name}, Color: {currentPlayer.Color}
+{pieceCount[0]} | {pieceCount[1]}";
+
+    if (!string.IsNullOrEmpty(_eventMessage))
+    {
+      statusText += $"\n\n[blue]Last Action:[/] {_eventMessage}";
+    }
+
+    Panel panel = new Panel(statusText)
       .Header("Game Status");
   
     AnsiConsole.Write(panel);
@@ -242,7 +248,5 @@ Turn: {currentPlayer.Name}, Color: {currentPlayer.Color}
   {
     _eventMessage =
       $"Moved piece from ({args.FromPosition.X}, {args.FromPosition.Y}) to ({args.ToPosition.X}, {args.ToPosition.Y})";
-    RenderBoard();
-    Console.WriteLine(_eventMessage);
   }
 }
