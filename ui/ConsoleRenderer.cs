@@ -1,3 +1,5 @@
+using Spectre.Console;
+
 public class ConsoleRenderer
 {
   private IBoard _board;
@@ -10,54 +12,106 @@ public class ConsoleRenderer
     _controller = controller;
   }
 
-  public void Render()
+  public void RenderGameTitle()
+  {
+    AnsiConsole.MarkupLine(@"
+    ╔══════════════════════════════════════════════════════════════════════════════════════╗
+    ║                                                                                      ║
+    ║     /$$$$$$  /$$                           /$$                                       ║
+    ║    /$$__  $$| $$                          | $$                                       ║
+    ║   | $$  \__/| $$$$$$$   /$$$$$$   /$$$$$$$| $$   /$$  /$$$$$$   /$$$$$$   /$$$$$$$   ║
+    ║   | $$      | $$__  $$ /$$__  $$ /$$_____/| $$  /$$/ /$$__  $$ /$$__  $$ /$$_____/   ║
+    ║   | $$      | $$  \ $$| $$$$$$$$| $$      | $$$$$$/ | $$$$$$$$| $$  \__/|  $$$$$$    ║
+    ║   | $$    $$| $$  | $$| $$_____/| $$      | $$_  $$ | $$_____/| $$       \____  $$   ║
+    ║   |  $$$$$$/| $$  | $$|  $$$$$$$|  $$$$$$$| $$ \  $$|  $$$$$$$| $$       /$$$$$$$/   ║
+    ║    \______/ |__/  |__/ \_______/ \_______/|__/  \__/ \_______/|__/      |_______/    ║
+    ║                                                                                      ║
+    ╚══════════════════════════════════════════════════════════════════════════════════════╝");
+  }
+
+  public CreateGameDto AskPlayersInfo()
+  {
+    string name1 = AnsiConsole.Ask<string>("Player one [green]name[/]: ");
+
+    string name2 = AnsiConsole.Ask<string>("Player two [green]name[/]: ");
+
+    return new CreateGameDto
+    {
+      PlayerOneName = name1,
+      PlayerOnePreferenceColor = ConsoleColor.Red,
+      PlayerTwoName = name2,
+      PlayerTwoPreferenceColor = ConsoleColor.DarkBlue
+    };
+  }
+
+  public void RenderBoard()
   {
     Console.Clear();
 
-    for( int row = -1; row < (int)_board.Size; row++ )
-    {
-      for( int column = -1; column < (int)_board.Size; column++ )
-      {
-        Console.ForegroundColor = ConsoleColor.Gray;
-        if( row < 0 && column < 0 )
-        {
-          Console.Write($"X,Y ");
-        }
-        else if( row < 0 )
-        {
-          Console.Write($" {column} ");
-        }
-        else if( column < 0 )
-        {
-          Console.Write($" {row}  ");
-        }
-        else
-        {
-          var cell = _board.Cell[row, column];
+    string manSymbol = """
+    /M\
+    \_/
+    """;
 
-          if( cell.Piece != null )
-          {
-            Console.ForegroundColor = cell.Piece.Color;
-            Console.Write(cell.Piece.PieceType == PieceType.Man ? "[M]" : "[K]");
-            // Console.Write(cell.Piece.PieceType == PieceType.Man ? $"[{row},{column}]" : $"[{row},{column}]");
-          }
-          else
-          {
-            Console.ForegroundColor = ConsoleColor.Gray;
-            Console.Write($"[ ]");
-          }
+    string kingSymbol = """
+    /K\
+    \_/
+    """;
+
+    Table table = new Table()
+      .Ascii2Border()
+      .ShowRowSeparators()
+      .Title("[yellow]CHECKERS GAME[/]");
+
+    table.AddColumn(" ", col => col.Width(4).Centered());
+
+    for ( int i = 0; i < (int)_board.Size; i++ )
+    {
+      table.AddColumn($"[grey]{i}[/]", col => col.Width(7).Centered());
+    }
+
+    for( int row = 0; row < (int)_board.Size; row++ )
+    {
+      Markup[] rowCells = new Markup[(int)_board.Size + 1];
+
+      rowCells[0] = new Markup($"[grey]{row}[/]");
+
+      for( int column = 0; column < (int)_board.Size; column++ )
+      {
+        ICell cell = _board.Cell[row, column];
+        string pieceSymbol = "\n\n";
+      
+        if (cell.Piece != null)
+        {
+          string type = cell.Piece.PieceType == PieceType.Man ? manSymbol : kingSymbol;
+          string color = cell.Piece.Color == ConsoleColor.Red ? "red" : "blue";
+          pieceSymbol = $"[{color}]{type}[/]";
         }
+        
+        rowCells[column + 1] = new Markup($@"{pieceSymbol}") { Justification = Justify.Center };
       }
 
-      Console.WriteLine();
+      table.AddRow(rowCells);
     }
+
+    AnsiConsole.Write(table);
   }
 
-  public void RenderGameStatus(IPlayer currentPlayer)
+  public void RenderGameStatus(IPlayer currentPlayer, Dictionary<IPlayer, int> playersPieceCount)
   {
-    Console.ForegroundColor = currentPlayer.Color;
-    Console.WriteLine();
-    Console.WriteLine($"Turn: {currentPlayer.Name}, Color: {currentPlayer.Color}");
+    string[] pieceCount = new string[2];
+
+    for ( int i = 0; i < playersPieceCount.Count; i++ )
+    {
+      pieceCount[i] = $"{playersPieceCount.ElementAt(i).Key.Name} pieces: {playersPieceCount.ElementAt(i).Value}";
+    }
+
+    Panel panel = new Panel($@"
+Turn: {currentPlayer.Name}, Color: {currentPlayer.Color}
+{pieceCount[0]} | {pieceCount[1]}")
+      .Header("Game Status");
+  
+    AnsiConsole.Write(panel);
   }
 
   public Position ReadChoosenPiecePosition()
@@ -65,7 +119,7 @@ public class ConsoleRenderer
     while (true)
     {
       Console.Write("Choose piece position to be moved (ex. 0,1):");
-      string startPosition = Console.ReadLine();
+      string startPosition = Console.ReadLine() ?? "";
 
       if ( GameService.TryParsePosition(startPosition, out Position from) )
       {
@@ -180,7 +234,7 @@ public class ConsoleRenderer
 
   public void ShowWinner(IPlayer winner)
   {
-    Render();
+    RenderBoard();
     Console.WriteLine($"The winner is: {winner.Name}");
   }
 
@@ -188,7 +242,7 @@ public class ConsoleRenderer
   {
     _eventMessage =
       $"Moved piece from ({args.FromPosition.X}, {args.FromPosition.Y}) to ({args.ToPosition.X}, {args.ToPosition.Y})";
-    Render();
+    RenderBoard();
     Console.WriteLine(_eventMessage);
   }
 }

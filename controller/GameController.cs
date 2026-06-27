@@ -14,6 +14,9 @@ public class GameController
   {
     GameResponseDto res = _gameService.InitializeBoard(dto);
 
+    // Clear previous event subscribers to avoid duplicates on restarts
+    MoveMade = null;
+
     var consoleRenderer = new ConsoleRenderer(res.Board, this);
     MoveMade += consoleRenderer.MoveEvent;
 
@@ -24,13 +27,8 @@ public class GameController
       Position fromPosition = default;
       LegalMovesResponseDto legalMoves;
 
-      consoleRenderer.Render();
-      consoleRenderer.RenderGameStatus(player);
-
-      foreach( KeyValuePair<IPlayer, int> p in _gameService.PlayersPieceCount() )
-      {
-        Console.WriteLine($"{p.Key.Name} pieces: {p.Value}");
-      }
+      consoleRenderer.RenderBoard();
+      consoleRenderer.RenderGameStatus(player, _gameService.PlayersPieceCount());
 
       // if player doesn't have any piece or move, end the game
       if( !_gameService.PlayerHasAnyMoves(player) )
@@ -129,6 +127,13 @@ public class GameController
     Console.Clear();
     Console.WriteLine("Restarting game...");
 
-    return Start(null);
+    return Start(new CreateGameDto
+    {
+      PlayerOneName = _gameService.GetPlayers().ElementAt(0).Name,
+      PlayerOnePreferenceColor = _gameService.GetPlayers().ElementAt(0).Color,
+      PlayerTwoName = _gameService.GetPlayers().ElementAt(1).Name,
+      PlayerTwoPreferenceColor = _gameService.GetPlayers().ElementAt(1).Color,
+      Size = BoardSize.Standard
+    });
   }
 }

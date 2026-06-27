@@ -26,6 +26,42 @@ public class GameService : IGameService
 
   public GameResponseDto InitializeBoard(CreateGameDto? dto)
   {
+    BoardSize size = dto?.Size ?? BoardSize.Standard;
+
+    // Reset player details
+    if (dto != null)
+    {
+      var p1 = _players.Find(p => p.IsPlayerOne);
+      if (p1 != null)
+      {
+        p1.Name = dto.PlayerOneName;
+        p1.Color = dto.PlayerOnePreferenceColor;
+      }
+      var p2 = _players.Find(p => !p.IsPlayerOne);
+      if (p2 != null)
+      {
+        p2.Name = dto.PlayerTwoName;
+        p2.Color = dto.PlayerTwoPreferenceColor;
+      }
+    }
+
+    // Recreate the board to clear pieces and set fresh positions
+    _board = new Board(size, _players);
+
+    // Reset current player
+    CurrentPlayer = _players.Find(p => p.IsPlayerOne) ?? _players[0];
+
+    // Reset players pieces collections
+    PlayersPieces = _players.ToDictionary(
+      player => player,
+      player =>
+        _board
+          .Cell.OfType<ICell>()
+          .Where(cell => cell.Piece != null && cell.Piece.Color == player.Color)
+          .Select(cell => cell.Piece!)
+          .ToList()
+    );
+
     return new GameResponseDto
     {
       CurrentPlayer = CurrentPlayer,
@@ -39,7 +75,16 @@ public class GameService : IGameService
     // check from and to positions are inside the board
     if( !IsInside(dto.FromPosition) || !IsInside(dto.ToPosition) )
     {
-      return new UpdatePiecePositionResultDto { MovementSucceed = false };
+      return new UpdatePiecePositionResultDto 
+      { 
+        MovementSucceed = false,
+        Crowned = false,
+        Captured = false,
+        HasMoreCaptures = false,
+        CurrentPlayer = CurrentPlayer,
+        Winner = null,
+        Board = _board,
+      };
     }
 
     // check if there is a piece at the from position
@@ -47,7 +92,16 @@ public class GameService : IGameService
 
     if( piece == null )
     {
-      return new UpdatePiecePositionResultDto { MovementSucceed = false };
+      return new UpdatePiecePositionResultDto 
+      {
+        MovementSucceed = false,
+        Crowned = false,
+        Captured = false,
+        HasMoreCaptures = false,
+        CurrentPlayer = CurrentPlayer,
+        Winner = null,
+        Board = _board,
+      };
     }
 
     // check all legal moves
@@ -55,7 +109,16 @@ public class GameService : IGameService
 
     if( !legalMoves.Moves.Contains(dto.ToPosition) )
     {
-      return new UpdatePiecePositionResultDto { MovementSucceed = false };
+      return new UpdatePiecePositionResultDto 
+      {
+        MovementSucceed = false,
+        Crowned = false,
+        Captured = false,
+        HasMoreCaptures = false,
+        CurrentPlayer = CurrentPlayer,
+        Winner = null,
+        Board = _board,
+      };
     }
 
     UpdatePiecePositionResultDto res = PerformMove(piece, dto.FromPosition, dto.ToPosition);
@@ -66,6 +129,9 @@ public class GameService : IGameService
       Captured = res.Captured,
       Crowned = res.Crowned,
       HasMoreCaptures = res.HasMoreCaptures,
+      CurrentPlayer = CurrentPlayer,
+      Winner = null,
+      Board = _board,
     };
   }
 
@@ -255,7 +321,9 @@ public class GameService : IGameService
       Captured = isCaptured,
       Crowned = isCrowned,
       HasMoreCaptures = canCaptureAgain,
-      Winner = GetWinner()
+      CurrentPlayer = CurrentPlayer,
+      Winner = GetWinner(),
+      Board = _board,
     };
   }
 

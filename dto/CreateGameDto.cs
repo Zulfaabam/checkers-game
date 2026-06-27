@@ -1,6 +1,6 @@
 public class CreateGameDto {
-    public string PlayerOneName;
-    public string PlayerTwoName;
+    public required string PlayerOneName;
+    public required string PlayerTwoName;
     public ConsoleColor PlayerOnePreferenceColor;
     public ConsoleColor PlayerTwoPreferenceColor;
     public BoardSize Size;

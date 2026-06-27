@@ -1,5 +1,5 @@
 public class GameResponseDto {
-    public IPlayer CurrentPlayer;
+    public required IPlayer CurrentPlayer;
     public IPlayer? Winner;
-    public IBoard Board;
+    public required IBoard Board;
 }

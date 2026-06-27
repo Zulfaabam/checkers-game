@@ -1,8 +1,8 @@
 public class MoveEventArgs : EventArgs
 {
-    public IPlayer Player;
+    public required IPlayer Player;
     public Position FromPosition;
     public Position ToPosition;
-    public IPiece Piece;
+    public IPiece? Piece;
     public bool Crowned;
 }

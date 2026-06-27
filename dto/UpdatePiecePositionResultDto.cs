@@ -3,7 +3,7 @@ public class UpdatePiecePositionResultDto {
     public bool Crowned;
     public bool Captured;
     public bool HasMoreCaptures;
-    public IPlayer CurrentPlayer;
+    public required IPlayer CurrentPlayer;
     public IPlayer? Winner;
-    public IBoard Board;
+    public required IBoard Board;
 }
