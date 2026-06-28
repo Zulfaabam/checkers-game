@@ -139,95 +139,80 @@ public class ConsoleRenderer
 
   public Position ReadMoveFromConsole(LegalMovesResponseDto legalMoves)
   {
-    Console.ForegroundColor = ConsoleColor.Green;
     List<Position> moves = legalMoves.Moves.ToList();
 
     if (moves.Count == 0)
     {
-      throw new InvalidOperationException("No legal moves available.");
+      AnsiConsole.MarkupLine("[bold red]No legal moves available[/]");
+      return default;
     }
 
     if (moves.Count == 1)
     {
-      Console.Write($"Only one move available to ({moves[0].X},{moves[0].Y}). Press Enter to confirm: ");
+      AnsiConsole.MarkupLine($"[green]Only one move available to ({moves[0].X},{moves[0].Y}). Press Enter to confirm:[/]");
       Console.ReadLine();
       return moves[0];
     }
 
-    Console.WriteLine("Legal moves:");
-    for (int i = 0; i < moves.Count; i++)
+    List<string> choices = new List<string>();
+
+    foreach ( Position move in moves )
     {
-      Console.WriteLine($"{i + 1}. Move to ({moves[i].X},{moves[i].Y})");
+      choices.Add($"{move.X},{move.Y}");
     }
 
     while (true)
     {
-      Console.Write($"Choose move (1-{moves.Count}) [Default is 1, press Enter]: ");
-      string input = Console.ReadLine() ?? "";
+      string input = AnsiConsole.Prompt(
+      new SelectionPrompt<string>()
+        .Title("Choose move:")
+        .AddChoices(choices));
 
-      if (string.IsNullOrWhiteSpace(input))
+      if (GameService.TryParsePosition(input, out Position toPosition))
       {
-        return moves[0];
-      }
-
-      if (int.TryParse(input, out int choice) && choice >= 1 && choice <= moves.Count)
-      {
-        return moves[choice - 1];
+        return toPosition;
       }
 
       AnsiConsole.MarkupLine("[bold red]Invalid selection. Please choose a valid number.[/]");
     }
   }
 
-  public void ForceCaptureMove(IPlayer player, Dictionary<Position, List<Position>> captureMoves)
+  public Position ReadForcedCapturePiece(IPlayer player, Dictionary<Position, List<Position>> captureMoves)
   {
-    AnsiConsole.MarkupLine("[yellow]You must capture the piece.[/]");
+    AnsiConsole.MarkupLine($"[{GetSpectreNamedColor(player.Color)}]{player.Name}[/], [yellow]you must capture the piece.[/]");
+
+    List<string> choices = new List<string>();
 
     foreach ( KeyValuePair<Position, List<Position>> kvp in captureMoves)
     {
       Position from = kvp.Key;
       foreach (Position to in kvp.Value)
       {
-        Console.WriteLine($"- From {from.X},{from.Y} to {to.X},{to.Y}");
+        choices.Add($"From {from.X},{from.Y} to {to.X},{to.Y}");
       }
-    }
-
-    AnsiConsole.MarkupLine($"[yellow]You must capture the piece.[/]");
-  }
-
-  public Position ReadForcedCapturePiece(Dictionary<Position, List<Position>> captureMoves)
-  {
-    List<Position> forcedPieces = captureMoves.Keys.ToList();
-
-    if (forcedPieces.Count == 1)
-    {
-      Console.Write($"Piece at ({forcedPieces[0].X},{forcedPieces[0].Y}) must capture. Press Enter to select: ");
-      Console.ReadLine();
-      return forcedPieces[0];
-    }
-
-    Console.WriteLine("Multiple pieces can capture. Choose one to move:");
-    for (int i = 0; i < forcedPieces.Count; i++)
-    {
-      Console.WriteLine($"{i + 1}. Piece at ({forcedPieces[i].X},{forcedPieces[i].Y})");
     }
 
     while (true)
     {
-      Console.Write($"Enter number (1-{forcedPieces.Count}) [Default is 1, press Enter]: ");
-      string input = Console.ReadLine() ?? "";
+      string input = AnsiConsole.Prompt(
+      new SelectionPrompt<string>()
+        .Title("Choose piece to capture:")
+        .AddChoices(choices));
 
-      if (string.IsNullOrWhiteSpace(input))
+      string[] rawPosition = input.Replace("From ", "").Split(" to ");
+
+      if (rawPosition.Length != 2)
       {
-        return forcedPieces[0];
+        AnsiConsole.MarkupLine("[bold red]Invalid move.[/]");
+        continue;
       }
 
-      if (int.TryParse(input, out int choice) && choice >= 1 && choice <= forcedPieces.Count)
+      if (GameService.TryParsePosition(rawPosition[0], out Position fromPosition))
       {
-        return forcedPieces[choice - 1];
+        return fromPosition;
       }
 
-      AnsiConsole.MarkupLine("[bold red]Invalid selection. Please choose a valid number.[/]");
+      AnsiConsole.MarkupLine("[bold red]Invalid selection. Please choose a valid move.[/]");
     }
   }
 

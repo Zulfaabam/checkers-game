@@ -27,6 +27,7 @@ public class GameController
       IPlayer player = _gameService.CurrentPlayer;
       IPiece? movedPiece = null;
       Position fromPosition = default;
+      Position toPosition = default;
       LegalMovesResponseDto legalMoves;
 
       consoleRenderer.RenderBoard();
@@ -42,10 +43,10 @@ public class GameController
       
       if( captureMoves.Count > 0 )
       {
-        consoleRenderer.ForceCaptureMove(player, captureMoves);
-        fromPosition = consoleRenderer.ReadForcedCapturePiece(captureMoves);
+        fromPosition = consoleRenderer.ReadForcedCapturePiece(player, captureMoves);
         movedPiece = _gameService.GetPieceAt(fromPosition);
         legalMoves = new LegalMovesResponseDto { Moves = captureMoves[fromPosition] };
+        toPosition = legalMoves.Moves.First();
       }
       else
       {
@@ -60,9 +61,8 @@ public class GameController
         }
 
         legalMoves = GetLegalMoves(fromPosition);
+        toPosition = consoleRenderer.ReadMoveFromConsole(legalMoves);
       }
-
-      Position toPosition = consoleRenderer.ReadMoveFromConsole(legalMoves);
 
       var updatePiecePosition = new UpdatePiecePositionDto
       {
