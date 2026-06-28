@@ -1,3 +1,5 @@
+using Spectre.Console;
+
 public class GameController
 {
   private IGameService _gameService;
@@ -52,9 +54,7 @@ public class GameController
 
         while( movedPiece == null || movedPiece.Color != player.Color )
         {
-          Console.ForegroundColor = ConsoleColor.Red;
-          Console.WriteLine("Wrong piece! Please choose your piece");
-          Console.ForegroundColor = ConsoleColor.Green;
+          AnsiConsole.MarkupLine("[bold red]Wrong piece! Please choose your piece[/]");
           fromPosition = consoleRenderer.ReadChoosenPiecePosition();
           movedPiece = _gameService.GetPieceAt(fromPosition);
         }
@@ -98,7 +98,7 @@ public class GameController
 
     if( !res.MovementSucceed )
     {
-      Console.WriteLine("Invalid move");
+      AnsiConsole.MarkupLine("[bold red]Invalid move[/]");
     }
 
     if( res.MovementSucceed && movedPiece != null )
@@ -124,7 +124,7 @@ public class GameController
   public GameResponseDto Restart()
   {
     Console.Clear();
-    Console.WriteLine("Restarting game...");
+    AnsiConsole.MarkupLine("[yellow]Restarting game...[/]");
 
     return Start(new CreateGameDto
     {

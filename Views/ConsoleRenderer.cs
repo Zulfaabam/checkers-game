@@ -31,9 +31,9 @@ public class ConsoleRenderer
 
   public CreateGameDto AskPlayersInfo()
   {
-    string name1 = AnsiConsole.Ask<string>("Player one [green]name[/]: ");
+    string name1 = AnsiConsole.Ask<string>("Player one [red]name[/]: ");
 
-    string name2 = AnsiConsole.Ask<string>("Player two [green]name[/]: ");
+    string name2 = AnsiConsole.Ask<string>("Player two [blue]name[/]: ");
 
     return new CreateGameDto
     {
@@ -84,7 +84,7 @@ public class ConsoleRenderer
         if (cell.Piece != null)
         {
           string type = cell.Piece.PieceType == PieceType.Man ? manSymbol : kingSymbol;
-          string color = cell.Piece.Color == ConsoleColor.Red ? "red" : "blue";
+          string color = GetSpectreNamedColor(cell.Piece.Color);
           pieceSymbol = $"[{color}]{type}[/]";
         }
         
@@ -106,16 +106,17 @@ public class ConsoleRenderer
       pieceCount[i] = $"{playersPieceCount.ElementAt(i).Key.Name} pieces: {playersPieceCount.ElementAt(i).Value}";
     }
 
-    string statusText = $@"Turn: {currentPlayer.Name}, Color: {currentPlayer.Color}
+    string statusText = $@"Turn: [{GetSpectreNamedColor(currentPlayer.Color)}]{currentPlayer.Name}[/], Color: [{GetSpectreNamedColor(currentPlayer.Color)}]{currentPlayer.Color}[/]
 {pieceCount[0]} | {pieceCount[1]}";
 
     if (!string.IsNullOrEmpty(_eventMessage))
     {
-      statusText += $"\n\n[blue]Last Action:[/] {_eventMessage}";
+      statusText += $"\n\n[aqua]Last Action:[/] {_eventMessage}";
     }
 
     Panel panel = new Panel(statusText)
-      .Header("Game Status");
+      .Header("Game Status")
+      .BorderColor(Color.DeepSkyBlue1);
   
     AnsiConsole.Write(panel);
   }
@@ -124,7 +125,7 @@ public class ConsoleRenderer
   {
     while (true)
     {
-      Console.Write("Choose piece position to be moved (ex. 0,1):");
+      Console.Write("Choose piece position to move (ex. 0,1): ");
       string startPosition = Console.ReadLine() ?? "";
 
       if ( GameService.TryParsePosition(startPosition, out Position from) )
@@ -132,9 +133,7 @@ public class ConsoleRenderer
         return new Position(from.X, from.Y);
       }
 
-      Console.ForegroundColor = ConsoleColor.Red;
-      Console.WriteLine("Invalid piece position format. Use x,y like 2,3.");
-      Console.ForegroundColor = ConsoleColor.Green;
+      AnsiConsole.MarkupLine("[bold red]Invalid piece position format. Use x,y like 2,3.[/]");
     }
   }
 
@@ -176,18 +175,15 @@ public class ConsoleRenderer
         return moves[choice - 1];
       }
 
-      Console.ForegroundColor = ConsoleColor.Red;
-      Console.WriteLine("Invalid selection. Please choose a valid number.");
-      Console.ForegroundColor = ConsoleColor.Green;
+      AnsiConsole.MarkupLine("[bold red]Invalid selection. Please choose a valid number.[/]");
     }
   }
 
   public void ForceCaptureMove(IPlayer player, Dictionary<Position, List<Position>> captureMoves)
   {
-    Console.ForegroundColor = ConsoleColor.Yellow;
-    Console.WriteLine($"{player.Name} has capture moves:");
+    AnsiConsole.MarkupLine("[yellow]You must capture the piece.[/]");
 
-    foreach (var kvp in captureMoves)
+    foreach ( KeyValuePair<Position, List<Position>> kvp in captureMoves)
     {
       Position from = kvp.Key;
       foreach (Position to in kvp.Value)
@@ -196,8 +192,7 @@ public class ConsoleRenderer
       }
     }
 
-    Console.WriteLine($"You must capture the piece.");
-    Console.ForegroundColor = ConsoleColor.Green;
+    AnsiConsole.MarkupLine($"[yellow]You must capture the piece.[/]");
   }
 
   public Position ReadForcedCapturePiece(Dictionary<Position, List<Position>> captureMoves)
@@ -232,21 +227,32 @@ public class ConsoleRenderer
         return forcedPieces[choice - 1];
       }
 
-      Console.ForegroundColor = ConsoleColor.Red;
-      Console.WriteLine("Invalid selection. Please choose a valid number.");
-      Console.ForegroundColor = ConsoleColor.Green;
+      AnsiConsole.MarkupLine("[bold red]Invalid selection. Please choose a valid number.[/]");
     }
   }
 
   public void ShowWinner(IPlayer winner)
   {
+    FigletText figlet = new FigletText($"{winner.Name} wins!")
+      .Color(winner.Color);
+    
     RenderBoard();
-    Console.WriteLine($"The winner is: {winner.Name}");
+    AnsiConsole.Write(figlet);
   }
 
   public void MoveEvent(object? o, MoveEventArgs args)
   {
     _eventMessage =
-      $"Moved piece from ({args.FromPosition.X}, {args.FromPosition.Y}) to ({args.ToPosition.X}, {args.ToPosition.Y})";
+      $"{args.Player.Name} moved a piece from ({args.FromPosition.X}, {args.FromPosition.Y}) to ({args.ToPosition.X}, {args.ToPosition.Y})";
+  }
+
+  private static string GetSpectreNamedColor(ConsoleColor color)
+  {
+    return color switch
+    {
+      ConsoleColor.Red => "red",
+      ConsoleColor.DarkBlue => "blue",
+      _ => "white"
+    };
   }
 }
