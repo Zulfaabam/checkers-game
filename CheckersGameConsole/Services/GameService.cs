@@ -15,12 +15,7 @@ public class GameService : IGameService
 
     PlayersPieces = _players.ToDictionary(
       player => player,
-      player =>
-        _board
-          .Cell.OfType<ICell>()
-          .Where(cell => cell.Piece != null && cell.Piece.Color == player.Color)
-          .Select(cell => cell.Piece!)
-          .ToList()
+      FilterPiecesByPlayer
     );
   }
 
@@ -51,12 +46,7 @@ public class GameService : IGameService
 
     PlayersPieces = _players.ToDictionary(
       player => player,
-      player =>
-        _board
-          .Cell.OfType<ICell>()
-          .Where(cell => cell.Piece != null && cell.Piece.Color == player.Color)
-          .Select(cell => cell.Piece!)
-          .ToList()
+      FilterPiecesByPlayer
     );
 
     return new GameResponseDto
@@ -190,6 +180,17 @@ public class GameService : IGameService
       .Any(m => m.Moves.Any());
   }
 
+  public List<Position> GetMovablePiecesFromPlayer(IPlayer player)
+  {
+    List<Position> positions = _board.Cell.OfType<ICell>()
+      .Where(cell => cell.Piece != null && cell.Piece.Color == player.Color)
+      .Where(cell => GetLegalMoves(cell.Position).Moves.Any())
+      .Select(cell => cell.Position)
+      .ToList();
+
+    return positions;
+  }
+
   public List<IPlayer> GetPlayers()
   {
     return _players;
@@ -198,9 +199,9 @@ public class GameService : IGameService
   public IPlayer GetWinner()
   {
     return PlayersPieces
-    .Where(player => player.Value.Count != 0)
-    .Select(p => p.Key)
-    .First();
+      .Where(player => player.Value.Count != 0)
+      .Select(p => p.Key)
+      .First();
   }
 
   public Dictionary<IPlayer, int> PlayersPieceCount()
@@ -349,5 +350,10 @@ public class GameService : IGameService
       Winner = winner,
       Board = _board,
     };
+  }
+
+  private List<IPiece> FilterPiecesByPlayer(IPlayer player)
+  {
+    return AllPieces().Where(p => p.Color == player.Color).ToList();
   }
 }

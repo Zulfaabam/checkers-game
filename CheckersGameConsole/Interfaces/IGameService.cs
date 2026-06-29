@@ -11,6 +11,7 @@ public interface IGameService
     public LegalMovesResponseDto GetLegalMovesFromPlayer(IPlayer player);
     public LegalMovesResponseDto GetLegalMovesFromPiece(IPiece piece);
     public Dictionary<Position, List<Position>> PlayerHasCaptureMoves(IPlayer player);
+    public List<Position> GetMovablePiecesFromPlayer(IPlayer player);
     public bool PlayerHasAnyMoves(IPlayer player);
     public List<IPlayer> GetPlayers();
     public IPlayer GetWinner();

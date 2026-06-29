@@ -52,15 +52,9 @@ public class GameController
       }
       else
       {
-        fromPosition = consoleRenderer.ReadChoosenPiecePosition();
+        List<Position> movablePositions = _gameService.GetMovablePiecesFromPlayer(player);
+        fromPosition = consoleRenderer.ReadChoosenPiecePosition(movablePositions);
         movedPiece = _gameService.GetPieceAt(fromPosition);
-
-        while( movedPiece == null || movedPiece.Color != player.Color )
-        {
-          AnsiConsole.MarkupLine("[bold red]Wrong piece! Please choose your piece[/]");
-          fromPosition = consoleRenderer.ReadChoosenPiecePosition();
-          movedPiece = _gameService.GetPieceAt(fromPosition);
-        }
 
         legalMoves = GetLegalMoves(fromPosition);
         toPosition = consoleRenderer.ReadMoveFromConsole(legalMoves);
@@ -89,6 +83,12 @@ public class GameController
         Winner = res.Winner,
         Reason = "Game over"
       });
+
+      bool playAgain = consoleRenderer.PromptPostGame();
+      if( playAgain )
+      {
+        return Restart();
+      }
     }
 
     return res;
@@ -133,7 +133,6 @@ public class GameController
   public GameResponseDto Restart()
   {
     Console.Clear();
-    AnsiConsole.MarkupLine("[yellow]Restarting game...[/]");
 
     return Start(new CreateGameDto
     {

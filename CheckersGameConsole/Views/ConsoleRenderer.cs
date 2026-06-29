@@ -111,20 +111,20 @@ public class ConsoleRenderer
     AnsiConsole.Write(panel);
   }
 
-  public Position ReadChoosenPiecePosition()
+  public Position ReadChoosenPiecePosition(List<Position> movablePositions)
   {
-    while( true )
-    {
-      AnsiConsole.Markup("[gold1]Choose piece position to move (ex. 0,1): [/]");
-      string startPosition = Console.ReadLine() ?? "";
+    List<string> choices = movablePositions
+      .Select(p => $"{p.X},{p.Y}")
+      .ToList();
 
-      if( GameService.TryParsePosition(startPosition, out Position from) )
-      {
-        return new Position(from.X, from.Y);
-      }
+    string input = AnsiConsole.Prompt(
+      new SelectionPrompt<string>()
+        .Title($"[green]Choose a piece to move:[/]")
+        .HighlightStyle(new Style(Color.Green))
+        .AddChoices(choices));
 
-      AnsiConsole.MarkupLine("[bold red]Invalid piece position format. Use x,y like 2,3.[/]");
-    }
+    GameService.TryParsePosition(input, out Position chosen);
+    return chosen;
   }
 
   public Position ReadMoveFromConsole(LegalMovesResponseDto legalMoves)
@@ -154,9 +154,9 @@ public class ConsoleRenderer
     while( true )
     {
       string input = AnsiConsole.Prompt(
-      new SelectionPrompt<string>()
-        .Title("Choose move:")
-        .AddChoices(choices));
+        new SelectionPrompt<string>()
+          .Title("Choose move:")
+          .AddChoices(choices));
 
       if( GameService.TryParsePosition(input, out Position toPosition) )
       {
@@ -185,9 +185,9 @@ public class ConsoleRenderer
     while( true )
     {
       string input = AnsiConsole.Prompt(
-      new SelectionPrompt<string>()
-        .Title("Choose piece to capture:")
-        .AddChoices(choices));
+        new SelectionPrompt<string>()
+          .Title("Choose piece to capture:")
+          .AddChoices(choices));
 
       string[] rawPosition = input.Replace("From ", "").Split(" to ");
 
@@ -213,6 +213,17 @@ public class ConsoleRenderer
 
     RenderBoard();
     AnsiConsole.Write(figlet);
+  }
+
+  public bool PromptPostGame()
+  {
+    string choice = AnsiConsole.Prompt(
+      new SelectionPrompt<string>()
+        .Title("\n[bold yellow]What would you like to do?[/]")
+        .HighlightStyle(new Style(Color.Gold1))
+        .AddChoices("▶  Play Again", "✖  Quit Game"));
+
+    return choice.StartsWith('▶');
   }
 
   public void GameEndedEvent(object? sender, GameEndedEventArgs args)
