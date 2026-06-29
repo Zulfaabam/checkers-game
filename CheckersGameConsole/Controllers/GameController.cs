@@ -18,9 +18,11 @@ public class GameController
 
     // Clear previous event subscribers to avoid duplicates on restarts
     MoveMade = null;
+    GameEnded = null;
 
     var consoleRenderer = new ConsoleRenderer(res.Board, this);
     MoveMade += consoleRenderer.MoveEvent;
+    GameEnded += consoleRenderer.GameEndedEvent;
 
     while( res.Winner == null )
     {
@@ -40,7 +42,7 @@ public class GameController
       }
 
       Dictionary<Position, List<Position>> captureMoves = _gameService.PlayerHasCaptureMoves(player);
-      
+
       if( captureMoves.Count > 0 )
       {
         fromPosition = consoleRenderer.ReadForcedCapturePiece(player, captureMoves);
@@ -80,7 +82,14 @@ public class GameController
       };
     }
 
-    consoleRenderer.ShowWinner(res.Winner);
+    if( res.Winner != null )
+    {
+      GameEnded?.Invoke(this, new GameEndedEventArgs
+      {
+        Winner = res.Winner,
+        Reason = "Game over"
+      });
+    }
 
     return res;
   }

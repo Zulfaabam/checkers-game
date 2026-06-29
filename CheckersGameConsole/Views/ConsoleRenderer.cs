@@ -215,6 +215,14 @@ public class ConsoleRenderer
     AnsiConsole.Write(figlet);
   }
 
+  public void GameEndedEvent(object? sender, GameEndedEventArgs args)
+  {
+    if( args.Winner != null )
+    {
+      ShowWinner(args.Winner);
+    }
+  }
+
   public void MoveEvent(object? o, MoveEventArgs args)
   {
     _eventMessage =
