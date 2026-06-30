@@ -101,20 +101,6 @@ public class GameService : IGameService
       .Select(cell => cell.Piece!);
   }
 
-  public LegalMovesResponseDto GetLegalMovesFromPlayer(IPlayer player)
-  {
-    IEnumerable<Position> legalMoves = new List<Position>();
-
-    return new LegalMovesResponseDto { Moves = legalMoves };
-  }
-
-  public LegalMovesResponseDto GetLegalMovesFromPiece(IPiece piece)
-  {
-    IEnumerable<Position> legalMoves = new List<Position>();
-
-    return new LegalMovesResponseDto { Moves = legalMoves };
-  }
-
   public LegalMovesResponseDto GetLegalMoves(Position piecePosition)
   {
     IPiece? piece = GetPieceAt(piecePosition);

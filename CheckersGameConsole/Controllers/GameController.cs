@@ -16,7 +16,7 @@ public class GameController
   {
     GameResponseDto res = _gameService.InitializeBoard(dto);
 
-    // Clear previous event subscribers to avoid duplicates on restarts
+    // Clear previous event subscribers
     MoveMade = null;
     GameEnded = null;
 
@@ -81,7 +81,7 @@ public class GameController
       GameEnded?.Invoke(this, new GameEndedEventArgs
       {
         Winner = res.Winner,
-        Reason = "Game over"
+        Reason = $"{res.Winner.Name}"
       });
 
       bool playAgain = consoleRenderer.PromptPostGame();

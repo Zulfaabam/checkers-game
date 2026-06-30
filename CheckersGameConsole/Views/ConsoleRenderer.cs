@@ -44,6 +44,37 @@ public class ConsoleRenderer
     };
   }
 
+  public BoardSize AskBoardSize()
+  {
+    List<string> choices = new List<string>
+    {
+      $"{(int)BoardSize.Small}x{(int)BoardSize.Small} - Small",
+      $"{(int)BoardSize.Standard}x{(int)BoardSize.Standard} - Standard",
+      $"{(int)BoardSize.Large}x{(int)BoardSize.Large} - Large",
+      $"{(int)BoardSize.VeryLarge}x{(int)BoardSize.VeryLarge} - Very Large"
+    };
+
+    string input = AnsiConsole.Prompt(
+      new SelectionPrompt<string>()
+        .Title("[green]Choose board size:[/]")
+        .HighlightStyle(new Style(Color.Green))
+        .AddChoices(choices));
+
+    // Extract numeric size from the selected choice (e.g. "8x8 - Standard")
+    // TODO: use UseConverter() for simpler value extraction
+    string[] parts = input.Split('x');
+    if( parts.Length > 0 )
+    {
+      string numberPart = parts[0];
+      if( int.TryParse(numberPart, out int sizeValue) )
+      {
+        return (BoardSize)sizeValue;
+      }
+    }
+
+    return BoardSize.Standard;
+  }
+
   public void RenderBoard()
   {
     Console.Clear();

@@ -2,8 +2,10 @@
 
 namespace CheckersGame;
 
-class Program {
-  static void Main() {
+class Program
+{
+  static void Main()
+  {
     IPlayer player1 = new Player("player 1", ConsoleColor.Red, true);
     IPlayer player2 = new Player("player 2", ConsoleColor.DarkBlue, false);
 
@@ -16,11 +18,13 @@ class Program {
     consoleRenderer.RenderGameTitle();
 
     CreateGameDto playersInfo = consoleRenderer.AskPlayersInfo();
+    BoardSize boardSize = consoleRenderer.AskBoardSize();
 
     player1.Name = playersInfo.PlayerOneName;
     player1.Color = playersInfo.PlayerOnePreferenceColor;
     player2.Name = playersInfo.PlayerTwoName;
     player2.Color = playersInfo.PlayerTwoPreferenceColor;
+    board.Size = boardSize;
 
     controller.Start(new CreateGameDto
     {
@@ -28,7 +32,7 @@ class Program {
       PlayerTwoName = player2.Name,
       PlayerOnePreferenceColor = player1.Color,
       PlayerTwoPreferenceColor = player2.Color,
-      Size = BoardSize.Standard
+      Size = board.Size
     });
   }
 }
