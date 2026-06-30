@@ -85,9 +85,13 @@ public class ConsoleRenderer
     _board = board;
   }
 
-  public void RenderBoard()
+  public void RenderBoard(IEnumerable<Position>? highlights = null)
   {
     Console.Clear();
+
+    HashSet<Position> highlightSet = highlights != null
+      ? highlights.ToHashSet()
+      : [];
 
     Table table = new Table()
       .Ascii2Border()
@@ -117,6 +121,10 @@ public class ConsoleRenderer
           string type = GetPieceSymbol(cell.Piece.PieceType);
           string color = GetSpectreNamedColor(cell.Piece.Color);
           pieceSymbol = $"[{color}]{type}[/]";
+        }
+        else if( highlightSet.Contains(new Position { X = row, Y = column }) )
+        {
+          pieceSymbol = $"[green]({row},{column})[/]";
         }
 
         rowCells[column + 1] = new Markup($@"{pieceSymbol}") { Justification = Justify.Center };
@@ -180,8 +188,8 @@ public class ConsoleRenderer
 
     if( moves.Count == 1 )
     {
-      AnsiConsole.MarkupLine($"[green]Only one move available to ({moves[0].X},{moves[0].Y}). Press Enter to confirm:[/]");
-      Console.ReadLine();
+      AnsiConsole.Markup($"[green]Only one move available to ({moves[0].X},{moves[0].Y}). Press Enter to confirm:[/]");
+      Console.ReadKey();
       return moves[0];
     }
 
@@ -265,6 +273,79 @@ public class ConsoleRenderer
         .AddChoices("▶  Play Again", "✖  Quit Game"));
 
     return choice.StartsWith('▶');
+  }
+
+  public void RunGame(CreateGameDto createGameDto)
+  {
+    bool playAgain;
+
+    do
+    {
+      GameResponseDto res = _controller.Start(createGameDto);
+
+      SetBoard(res.Board);
+
+      _controller.MoveMade += MoveEvent;
+      _controller.GameEnded += GameEndedEvent;
+
+      while (res.Winner == null)
+      {
+        IPlayer player = res.CurrentPlayer;
+        Position fromPosition = default;
+        Position toPosition = default;
+        LegalMovesResponseDto legalMoves;
+
+        RenderBoard();
+        RenderGameStatus(player, _controller.PlayersPieceCount());
+
+        if (!_controller.PlayerHasAnyMoves(player))
+        {
+          res.Winner = _controller.GetPlayers().FirstOrDefault(p => p.Color != player.Color);
+          _controller.EndGame(res.Winner);
+          continue;
+        }
+
+        Dictionary<Position, List<Position>> captureMoves = _controller.PlayerHasCaptureMoves(player);
+
+        if (captureMoves.Count > 0)
+        {
+          fromPosition = ReadForcedCapturePiece(player, captureMoves);
+          legalMoves = new LegalMovesResponseDto { Moves = captureMoves[fromPosition] };
+        }
+        else
+        {
+          List<Position> movablePositions = _controller.GetMovablePiecesFromPlayer(player);
+          fromPosition = ReadChoosenPiecePosition(movablePositions);
+          legalMoves = _controller.GetLegalMoves(fromPosition);
+        }
+
+        RenderBoard(legalMoves.Moves);
+        RenderGameStatus(player, _controller.PlayersPieceCount());
+
+        toPosition = ReadMoveFromConsole(legalMoves);
+
+        GameResponseDto moveResult = _controller.Move(new UpdatePiecePositionDto
+        {
+          FromPosition = fromPosition,
+          ToPosition = toPosition,
+        });
+
+        SetBoard(moveResult.Board);
+        res = moveResult;
+      }
+
+      _controller.EndGame(res.Winner);
+      playAgain = PromptPostGame();
+
+      if (playAgain)
+      {
+        res = _controller.Restart();
+        _controller.MoveMade += MoveEvent;
+        _controller.GameEnded += GameEndedEvent;
+        SetBoard(res.Board);
+        ResetEventMessage();
+      }
+    } while (playAgain);
   }
 
   public void GameEndedEvent(object? sender, GameEndedEventArgs args)
