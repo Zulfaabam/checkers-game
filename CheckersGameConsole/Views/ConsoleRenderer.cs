@@ -35,13 +35,15 @@ public class ConsoleRenderer
 
     string name2 = AnsiConsole.Ask<string>("Player two [blue]name[/]: ");
 
-    return new CreateGameDto
+    CreateGameDto createGameDto = new CreateGameDto
     {
       PlayerOneName = name1,
       PlayerOnePreferenceColor = ConsoleColor.Red,
       PlayerTwoName = name2,
       PlayerTwoPreferenceColor = ConsoleColor.DarkBlue
     };
+
+    return createGameDto;
   }
 
   public BoardSize AskBoardSize()

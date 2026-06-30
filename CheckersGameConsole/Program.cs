@@ -11,9 +11,9 @@ class Program
 
     IBoard board = new Board(BoardSize.Standard, [player1, player2]);
 
-    var controller = new GameController(new GameService(board, [player1, player2]));
+    GameController controller = new GameController(new GameService(board, [player1, player2]));
 
-    var consoleRenderer = new ConsoleRenderer(board, controller);
+    ConsoleRenderer consoleRenderer = new ConsoleRenderer(board, controller);
 
     consoleRenderer.RenderGameTitle();
 

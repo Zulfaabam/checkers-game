@@ -24,19 +24,19 @@ public class GameService : IGameService
     BoardSize size = dto?.Size ?? BoardSize.Standard;
 
     // Reset player details, board size and pieces on board
-    if (dto != null)
+    if( dto != null )
     {
-      IPlayer? p1 = _players.Find(p => p.IsPlayerOne);
-      if (p1 != null)
+      IPlayer? player1 = _players.Find(p => p.IsPlayerOne);
+      if( player1 != null )
       {
-        p1.Name = dto.PlayerOneName;
-        p1.Color = dto.PlayerOnePreferenceColor;
+        player1.Name = dto.PlayerOneName;
+        player1.Color = dto.PlayerOnePreferenceColor;
       }
-      IPlayer? p2 = _players.Find(p => !p.IsPlayerOne);
-      if (p2 != null)
+      IPlayer? player2 = _players.Find(p => !p.IsPlayerOne);
+      if( player2 != null )
       {
-        p2.Name = dto.PlayerTwoName;
-        p2.Color = dto.PlayerTwoPreferenceColor;
+        player2.Name = dto.PlayerTwoName;
+        player2.Color = dto.PlayerTwoPreferenceColor;
       }
     }
 
@@ -49,12 +49,14 @@ public class GameService : IGameService
       FilterPiecesByPlayer
     );
 
-    return new GameResponseDto
+    GameResponseDto gameResponseDto = new GameResponseDto
     {
       CurrentPlayer = CurrentPlayer,
       Winner = null,
       Board = _board,
     };
+
+    return gameResponseDto;
   }
 
   public UpdatePiecePositionResultDto TryMove(UpdatePiecePositionDto dto)
@@ -105,8 +107,13 @@ public class GameService : IGameService
   {
     IPiece? piece = GetPieceAt(piecePosition);
     List<Position> legalMoves = [];
+    LegalMovesResponseDto legalMovesResponseDto = new LegalMovesResponseDto { Moves = legalMoves };
 
-    if( piece == null ) return new LegalMovesResponseDto { Moves = legalMoves };
+    if( piece == null )
+    {
+      return legalMovesResponseDto;
+    }
+    ;
 
     if( CurrentPlayer.IsPlayerOne )
     {
@@ -139,7 +146,9 @@ public class GameService : IGameService
       }
     }
 
-    return new LegalMovesResponseDto { Moves = legalMoves };
+    legalMovesResponseDto.Moves = legalMoves;
+
+    return legalMovesResponseDto;
   }
 
   public Dictionary<Position, List<Position>> PlayerHasCaptureMoves(IPlayer player)
@@ -202,14 +211,20 @@ public class GameService : IGameService
   {
     position = default;
 
-    if( string.IsNullOrWhiteSpace(input) ) return false;
+    if( string.IsNullOrWhiteSpace(input) )
+    {
+      return false;
+    }
 
     string[] parts = input.Split(
       ',',
       StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries
     );
 
-    if( parts.Length != 2 ) return false;
+    if( parts.Length != 2 )
+    {
+      return false;
+    }
 
     if( int.TryParse(parts[0], out int x) && int.TryParse(parts[1], out int y) )
     {
@@ -226,7 +241,7 @@ public class GameService : IGameService
     bool isCaptured = false;
     bool isCrowned = false;
 
-    bool isManCrowned = piece.PieceType == PieceType.Man && 
+    bool isManCrowned = piece.PieceType == PieceType.Man &&
       ( ( to.X == 0 && CurrentPlayer.IsPlayerOne ) ||
         ( to.X == (int)_board.Size - 1 && !CurrentPlayer.IsPlayerOne ) );
 
@@ -266,7 +281,7 @@ public class GameService : IGameService
 
     if( !canCaptureAgain ) SwitchTurn();
 
-    return new UpdatePiecePositionResultDto
+    UpdatePiecePositionResultDto result = new UpdatePiecePositionResultDto
     {
       MovementSucceed = true,
       Captured = isCaptured,
@@ -276,6 +291,8 @@ public class GameService : IGameService
       Winner = GetWinner(),
       Board = _board,
     };
+
+    return result;
   }
 
   private void SwitchTurn()
@@ -291,10 +308,13 @@ public class GameService : IGameService
       && position.Y < (int)_board.Size;
   }
 
-  private void EvaluateMoveDirection(Position currentPos, int dx, int dy, List<Position> legalMoves)
+  private void EvaluateMoveDirection(Position currentPos, int xPositionAddition, int yPositionAddition, List<Position> legalMoves)
   {
-    Position targetPos = new Position(currentPos.X + dx, currentPos.Y + dy);
-    if( !IsInside(targetPos) ) return;
+    Position targetPos = new Position(currentPos.X + xPositionAddition, currentPos.Y + yPositionAddition);
+    if( !IsInside(targetPos) )
+    {
+      return;
+    }
 
     IPiece? pieceAtTarget = GetPieceAt(targetPos);
     if( pieceAtTarget == null )
@@ -303,7 +323,7 @@ public class GameService : IGameService
     }
     else if( pieceAtTarget.Color != CurrentPlayer.Color )
     {
-      Position jumpPos = new Position(currentPos.X + dx * 2, currentPos.Y + dy * 2);
+      Position jumpPos = new Position(currentPos.X + xPositionAddition * 2, currentPos.Y + yPositionAddition * 2);
 
       if( IsInside(jumpPos) && GetPieceAt(jumpPos) == null )
       {
@@ -326,7 +346,7 @@ public class GameService : IGameService
     bool hasMoreCaptures = false,
     IPlayer? winner = null)
   {
-    return new UpdatePiecePositionResultDto
+    UpdatePiecePositionResultDto result = new UpdatePiecePositionResultDto
     {
       MovementSucceed = succeed,
       Crowned = crowned,
@@ -336,6 +356,8 @@ public class GameService : IGameService
       Winner = winner,
       Board = _board,
     };
+
+    return result;
   }
 
   private List<IPiece> FilterPiecesByPlayer(IPlayer player)

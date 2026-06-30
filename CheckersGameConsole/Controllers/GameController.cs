@@ -20,7 +20,7 @@ public class GameController
     MoveMade = null;
     GameEnded = null;
 
-    var consoleRenderer = new ConsoleRenderer(res.Board, this);
+    ConsoleRenderer consoleRenderer = new ConsoleRenderer(res.Board, this);
     MoveMade += consoleRenderer.MoveEvent;
     GameEnded += consoleRenderer.GameEndedEvent;
 
@@ -60,7 +60,7 @@ public class GameController
         toPosition = consoleRenderer.ReadMoveFromConsole(legalMoves);
       }
 
-      var updatePiecePosition = new UpdatePiecePositionDto
+      UpdatePiecePositionDto updatePiecePosition = new UpdatePiecePositionDto
       {
         FromPosition = fromPosition,
         ToPosition = toPosition,
@@ -122,25 +122,29 @@ public class GameController
       });
     }
 
-    return new GameResponseDto
+    GameResponseDto gameResponseDto = new GameResponseDto
     {
       CurrentPlayer = _gameService.CurrentPlayer,
       Winner = res.Winner,
       Board = res.Board
     };
+
+    return gameResponseDto;
   }
 
   public GameResponseDto Restart()
   {
     Console.Clear();
 
-    return Start(new CreateGameDto
+    CreateGameDto createGameDto = new CreateGameDto
     {
       PlayerOneName = _gameService.GetPlayers().ElementAt(0).Name,
       PlayerOnePreferenceColor = _gameService.GetPlayers().ElementAt(0).Color,
       PlayerTwoName = _gameService.GetPlayers().ElementAt(1).Name,
       PlayerTwoPreferenceColor = _gameService.GetPlayers().ElementAt(1).Color,
       Size = BoardSize.Standard
-    });
+    };
+
+    return Start(createGameDto);
   }
 }
