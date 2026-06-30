@@ -1,3 +1,3 @@
 public class LegalMovesResponseDto {
-    public IEnumerable<Position> Moves;
+    public required IEnumerable<Position> Moves;
 }

@@ -113,7 +113,6 @@ public class GameService : IGameService
     {
       return legalMovesResponseDto;
     }
-    ;
 
     if( CurrentPlayer.IsPlayerOne )
     {
@@ -205,6 +204,11 @@ public class GameService : IGameService
       player => player.Key,
       player => player.Value.Count
     );
+  }
+
+  public IBoard GetBoard()
+  {
+    return _board;
   }
 
   public static bool TryParsePosition(string input, out Position position)

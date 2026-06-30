@@ -12,7 +12,7 @@ public class ConsoleRenderer
     _controller = controller;
   }
 
-  public void RenderGameTitle()
+  public static void RenderGameTitle()
   {
     AnsiConsole.MarkupLine(@"[gold1]
     ╔══════════════════════════════════════════════════════════════════════════════════════╗
@@ -29,24 +29,27 @@ public class ConsoleRenderer
     ╚══════════════════════════════════════════════════════════════════════════════════════╝[/]");
   }
 
-  public CreateGameDto AskPlayersInfo()
+  public static CreateGameDto StartMenu()
   {
     string name1 = AnsiConsole.Ask<string>("Player one [red]name[/]: ");
 
     string name2 = AnsiConsole.Ask<string>("Player two [blue]name[/]: ");
+
+    BoardSize boardSize = AskBoardSize();
 
     CreateGameDto createGameDto = new CreateGameDto
     {
       PlayerOneName = name1,
       PlayerOnePreferenceColor = ConsoleColor.Red,
       PlayerTwoName = name2,
-      PlayerTwoPreferenceColor = ConsoleColor.DarkBlue
+      PlayerTwoPreferenceColor = ConsoleColor.DarkBlue,
+      Size = boardSize
     };
 
     return createGameDto;
   }
 
-  public BoardSize AskBoardSize()
+  public static BoardSize AskBoardSize()
   {
     List<string> choices = new List<string>
     {
@@ -75,6 +78,11 @@ public class ConsoleRenderer
     }
 
     return BoardSize.Standard;
+  }
+
+  public void SetBoard(IBoard board)
+  {
+    _board = board;
   }
 
   public void RenderBoard()
@@ -272,6 +280,11 @@ public class ConsoleRenderer
     _eventMessage =
       $"{args.Player.Name} moved a piece from ({args.FromPosition.X}, {args.FromPosition.Y}) to ({args.ToPosition.X}, {args.ToPosition.Y})";
   }
+
+  public void ResetEventMessage()
+  {
+    _eventMessage = "";
+  } 
 
   private static string GetSpectreNamedColor(ConsoleColor color)
   {
