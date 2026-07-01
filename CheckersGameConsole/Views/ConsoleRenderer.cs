@@ -85,12 +85,12 @@ public class ConsoleRenderer
     _board = board;
   }
 
-  public void RenderBoard(IEnumerable<Position>? highlights = null)
+  public void RenderBoard(IEnumerable<Position>? highlightMoves = null)
   {
     Console.Clear();
 
-    HashSet<Position> highlightSet = highlights != null
-      ? highlights.ToHashSet()
+    HashSet<Position> highlightSet = highlightMoves != null
+      ? highlightMoves.ToHashSet()
       : [];
 
     Table table = new Table()
