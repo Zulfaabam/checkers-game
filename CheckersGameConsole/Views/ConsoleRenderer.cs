@@ -255,13 +255,14 @@ public class ConsoleRenderer
     }
   }
 
-  public void ShowWinner(IPlayer winner)
+  public void ShowWinner(IPlayer winner, string? reason)
   {
     FigletText figlet = new FigletText($"{winner.Name} wins!")
       .Color(winner.Color);
 
     RenderBoard();
     AnsiConsole.Write(figlet);
+    AnsiConsole.MarkupLine($"[yellow]reason: {reason}[/]");
   }
 
   public bool PromptPostGame()
@@ -288,7 +289,7 @@ public class ConsoleRenderer
       _controller.MoveMade += MoveEvent;
       _controller.GameEnded += GameEndedEvent;
 
-      while (res.Winner == null)
+      while( res.Winner == null )
       {
         IPlayer player = res.CurrentPlayer;
         Position fromPosition = default;
@@ -298,7 +299,7 @@ public class ConsoleRenderer
         RenderBoard();
         RenderGameStatus(player, _controller.PlayersPieceCount());
 
-        if (!_controller.PlayerHasAnyMoves(player))
+        if( !_controller.PlayerHasAnyMoves(player) )
         {
           res.Winner = _controller.GetPlayers().FirstOrDefault(p => p.Color != player.Color);
           _controller.EndGame(res.Winner);
@@ -307,7 +308,7 @@ public class ConsoleRenderer
 
         Dictionary<Position, List<Position>> captureMoves = _controller.PlayerHasCaptureMoves(player);
 
-        if (captureMoves.Count > 0)
+        if( captureMoves.Count > 0 )
         {
           fromPosition = ReadForcedCapturePiece(player, captureMoves);
           legalMoves = new LegalMovesResponseDto { Moves = captureMoves[fromPosition] };
@@ -337,7 +338,7 @@ public class ConsoleRenderer
       _controller.EndGame(res.Winner);
       playAgain = PromptPostGame();
 
-      if (playAgain)
+      if( playAgain )
       {
         res = _controller.Restart();
         _controller.MoveMade += MoveEvent;
@@ -345,14 +346,14 @@ public class ConsoleRenderer
         SetBoard(res.Board);
         ResetEventMessage();
       }
-    } while (playAgain);
+    } while( playAgain );
   }
 
   public void GameEndedEvent(object? sender, GameEndedEventArgs args)
   {
     if( args.Winner != null )
     {
-      ShowWinner(args.Winner);
+      ShowWinner(args.Winner, args.Reason);
     }
   }
 
@@ -365,7 +366,7 @@ public class ConsoleRenderer
   public void ResetEventMessage()
   {
     _eventMessage = "";
-  } 
+  }
 
   private static string GetSpectreNamedColor(ConsoleColor color)
   {
