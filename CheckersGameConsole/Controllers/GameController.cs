@@ -69,7 +69,7 @@ public class GameController
     return _gameService.GetPlayers();
   }
 
-   public Dictionary<Position, List<Position>> PlayerHasCaptureMoves(IPlayer player)
+  public Dictionary<Position, List<Position>> PlayerHasCaptureMoves(IPlayer player)
   {
     return _gameService.PlayerHasCaptureMoves(player);
   }
@@ -100,13 +100,43 @@ public class GameController
 
   public void EndGame(IPlayer? winner)
   {
-    if( winner == null ) return;
+    if( winner == null )
+    {
+      return;
+    }
+
+    List<IPlayer> players = GetPlayers();
+    IPlayer? loser = players.FirstOrDefault(p => p != winner);
+
+    if( loser == null )
+    {
+      return;
+    }
+
+    string reason;
+
+    Dictionary<IPlayer, int> pieceCounts = PlayersPieceCount();
+    bool loserHasNoPiece = pieceCounts[loser] == 0;
+
+    bool loserHasNoMove = !PlayerHasAnyMoves(loser);
+
+    if( loserHasNoPiece )
+    {
+      reason = $"{winner.Name} wins because the opponent's pieces were wiped out";
+    }
+    else if( loserHasNoMove )
+    {
+      reason = $"{winner.Name} wins because the opponent has no legal moves";
+    }
+    else
+    {
+      reason = $"{winner.Name} wins";
+    }
 
     GameEnded?.Invoke(this, new GameEndedEventArgs
     {
       Winner = winner,
-      // TODO: determing the correct reason
-      Reason = $"{winner.Name}"
+      Reason = reason
     });
   }
 }
