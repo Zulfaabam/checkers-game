@@ -19,6 +19,54 @@ public class GameService : IGameService
     );
   }
 
+  /// <summary>
+  /// Initializes the board cells with pieces in their starting positions.
+  /// </summary>
+  /// <param name="size">The size of the board</param>
+  /// <param name="players">The list of players</param>
+  /// <returns>A 2D array of initialized cells</returns>
+  public static ICell[,] InitializeBoardCells(BoardSize size, List<IPlayer> players)
+  {
+    int boardSize = (int)size;
+
+    int rowToFill = size switch
+    {
+      BoardSize.Small => 2,
+      BoardSize.Standard => 3,
+      BoardSize.Large => 4,
+      BoardSize.VeryLarge => 5,
+      _ => 3
+    };
+
+    ICell[,] cells = new Cell[boardSize, boardSize];
+
+    for( int row = 0; row < boardSize; row++ )
+    {
+      for( int column = 0; column < boardSize; column++ )
+      {
+        cells[row, column] = new Cell(new Position(row, column), null);
+
+        if( ( row + column ) % 2 == 1 )
+        {
+          if( row < rowToFill )
+          {
+            cells[row, column] = new Cell(
+              new Position(row, column),
+              new Piece(PieceType.Man, players.First(p => !p.IsPlayerOne).Color));
+          }
+          else if( row >= boardSize - rowToFill )
+          {
+            cells[row, column] = new Cell(
+              new Position(row, column),
+              new Piece(PieceType.Man, players.First(p => p.IsPlayerOne).Color));
+          }
+        }
+      }
+    }
+
+    return cells;
+  }
+
   public GameResponseDto InitializeBoard(CreateGameDto? dto)
   {
     BoardSize size = dto?.Size ?? BoardSize.Standard;
@@ -40,7 +88,8 @@ public class GameService : IGameService
       }
     }
 
-    _board = new Board(size, _players);
+    ICell[,] initializedCells = InitializeBoardCells(size, _players);
+    _board = new Board(size, initializedCells);
 
     CurrentPlayer = _players.Find(p => p.IsPlayerOne) ?? _players[0];
 

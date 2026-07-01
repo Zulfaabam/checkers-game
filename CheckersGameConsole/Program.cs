@@ -1,6 +1,4 @@
-﻿
-
-namespace CheckersGame;
+﻿namespace CheckersGame;
 
 class Program
 {
@@ -12,9 +10,10 @@ class Program
     IPlayer player1 = new Player(gameInfo.PlayerOneName, gameInfo.PlayerOnePreferenceColor, true);
     IPlayer player2 = new Player(gameInfo.PlayerTwoName, gameInfo.PlayerTwoPreferenceColor, false);
 
-    IBoard board = new Board(gameInfo.Size, [player1, player2]);
+    ICell[,] initializedCells = GameService.InitializeBoardCells(gameInfo.Size, [player1, player2]);
+    IBoard board = new Board(gameInfo.Size, initializedCells);
 
-    GameService gameService = new GameService(board, [player1, player2]);
+    IGameService gameService = new GameService(board, [player1, player2]);
 
     GameController controller = new GameController(gameService);
 
