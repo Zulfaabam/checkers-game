@@ -67,6 +67,34 @@ public class GameService : IGameService
     return cells;
   }
 
+  public static bool TryParsePosition(string input, out Position position)
+  {
+    position = default;
+
+    if( string.IsNullOrWhiteSpace(input) )
+    {
+      return false;
+    }
+
+    string[] parts = input.Split(
+      ',',
+      StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries
+    );
+
+    if( parts.Length != 2 )
+    {
+      return false;
+    }
+
+    if( int.TryParse(parts[0], out int x) && int.TryParse(parts[1], out int y) )
+    {
+      position = new Position(x, y);
+      return true;
+    }
+
+    return false;
+  }
+
   public GameResponseDto InitializeBoard(CreateGameDto? dto)
   {
     BoardSize size = dto?.Size ?? BoardSize.Standard;
@@ -258,34 +286,6 @@ public class GameService : IGameService
   public IBoard GetBoard()
   {
     return _board;
-  }
-
-  public static bool TryParsePosition(string input, out Position position)
-  {
-    position = default;
-
-    if( string.IsNullOrWhiteSpace(input) )
-    {
-      return false;
-    }
-
-    string[] parts = input.Split(
-      ',',
-      StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries
-    );
-
-    if( parts.Length != 2 )
-    {
-      return false;
-    }
-
-    if( int.TryParse(parts[0], out int x) && int.TryParse(parts[1], out int y) )
-    {
-      position = new Position(x, y);
-      return true;
-    }
-
-    return false;
   }
 
   private UpdatePiecePositionResultDto PerformMove(IPiece piece, Position from, Position to)
