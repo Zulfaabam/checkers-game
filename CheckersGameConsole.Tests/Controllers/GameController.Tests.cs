@@ -1,50 +1,49 @@
 [TestFixture]
 public class GameControllerTests
 {
+  private Mock<IGameService> _gameServiceMock = null!;
+  private GameController _controller = null!;
+
+  [SetUp]
+  public void Setup()
+  {
+      _gameServiceMock = new Mock<IGameService>();
+      _controller = new GameController(_gameServiceMock.Object);
+  }
+
   [Test]
-  public void Start_InitializesBoardAndClearsPreviousEvents()
+  public void Start_InitializesBoardAndClearsPreviousEvents_ReturnsGameResponseDto()
   {
     // Arrange
-    List<IPlayer> players = new List<IPlayer>
-    {
-      new Player("Alice", ConsoleColor.Red, true),
-      new Player("Bob", ConsoleColor.White, false)
-    };
-
-    ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, players);
-    IBoard board = new Board(BoardSize.Standard, cells);
-    IGameService service = new GameService(board, players);
-    GameController controller = new GameController(service);
-
-    controller.MoveMade += (_, _) => { };
-    controller.GameEnded += (_, _) => { };
-
     CreateGameDto dto = new CreateGameDto
     {
-      PlayerOneName = "Player 1",
-      PlayerTwoName = "Player 2",
-      PlayerOnePreferenceColor = ConsoleColor.Blue,
-      PlayerTwoPreferenceColor = ConsoleColor.Yellow,
-      Size = BoardSize.Standard
+        PlayerOneName = "Player 1",
+        PlayerTwoName = "Player 2",
+        PlayerOnePreferenceColor = ConsoleColor.Blue,
+        PlayerTwoPreferenceColor = ConsoleColor.Yellow,
+        Size = BoardSize.Standard
     };
 
+    GameResponseDto expectedResponse = new GameResponseDto
+    {
+        CurrentPlayer = new Player("Player 1", ConsoleColor.Blue, true),
+        Winner = null,
+        Board = new Board(BoardSize.Standard, new ICell[0, 0])
+    };
+
+    _gameServiceMock
+        .Setup(x => x.InitializeBoard(dto))
+        .Returns(expectedResponse);
+
+    _controller.MoveMade += (_, _) => { };
+    _controller.GameEnded += (_, _) => { };
+
     // Act
-    GameResponseDto result = controller.Start(dto);
+    GameResponseDto result = _controller.Start(dto);
 
     // Assert
-    Assert.That(result, Is.Not.Null);
-    Assert.That(result.CurrentPlayer, Is.Not.Null);
-    Assert.That(result.CurrentPlayer.Name, Is.EqualTo("Player 1"));
-    Assert.That(result.Board, Is.Not.Null);
-    Assert.That(result.Board.Size, Is.EqualTo(BoardSize.Standard));
-
-    System.Reflection.FieldInfo? moveMadeField = typeof(GameController).GetField("MoveMade", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
-    System.Reflection.FieldInfo? gameEndedField = typeof(GameController).GetField("GameEnded", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
-
-    Assert.That(moveMadeField, Is.Not.Null);
-    Assert.That(gameEndedField, Is.Not.Null);
-    Assert.That(moveMadeField!.GetValue(controller), Is.Null);
-    Assert.That(gameEndedField!.GetValue(controller), Is.Null);
+    Assert.That(result, Is.SameAs(expectedResponse));
+    _gameServiceMock.Verify(x => x.InitializeBoard(dto), Times.Once);
   }
 
   [Test]

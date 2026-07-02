@@ -1,6 +1,20 @@
 [TestFixture]
 public class GameServiceTests
 {
+    private IBoard _board;
+    private List<IPlayer> _players;
+    private IGameService _gameService;
+
+    [SetUp]
+    public void SetUp()
+    {
+        _players = SetupPlayers();
+
+        ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, _players);
+        _board = new Board(BoardSize.Standard, cells);
+        _gameService = new GameService(_board, _players);
+    }
+
     [Test]
     public void InitializeBoardCells_MissingRequiredPlayer_ThrowsInvalidOperationException()
     {
@@ -62,14 +76,8 @@ public class GameServiceTests
     public void InitializeBoard_CreateGameDtoIsComplete_ReturnsGameResponseDto()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-        IPlayer playerOne = players.Find(p => p.IsPlayerOne)!;
-        IPlayer playerTwo = players.Find(p => !p.IsPlayerOne)!;
-
-        ICell[,] initializedCells = GameService.InitializeBoardCells(BoardSize.Standard, [playerOne, playerTwo]);
-        IBoard board = new Board(BoardSize.Standard, initializedCells);
-
-        IGameService gameService = new GameService(board, [playerOne, playerTwo]);
+        IPlayer playerOne = _players.Find(p => p.IsPlayerOne)!;
+        IPlayer playerTwo = _players.Find(p => !p.IsPlayerOne)!;
 
         CreateGameDto createGameDto = new CreateGameDto
         {
@@ -77,17 +85,17 @@ public class GameServiceTests
             PlayerTwoName = playerTwo.Name,
             PlayerOnePreferenceColor = playerOne.Color,
             PlayerTwoPreferenceColor = playerTwo.Color,
-            Size = board.Size
+            Size = _board.Size
         };
 
         // Act
-        GameResponseDto gameResponseDto = gameService.InitializeBoard(createGameDto);
+        GameResponseDto gameResponseDto = _gameService.InitializeBoard(createGameDto);
 
         // Assert
         Assert.That(gameResponseDto, Is.Not.Null);
         Assert.That(gameResponseDto.CurrentPlayer, Is.EqualTo(playerOne));
         Assert.That(gameResponseDto.Winner, Is.Null);
-        Assert.That(gameResponseDto.Board, Is.EqualTo(board));
+        Assert.That(gameResponseDto.Board, Is.EqualTo(_board));
     }
 
     [TestCase(BoardSize.Small)]
@@ -97,9 +105,8 @@ public class GameServiceTests
     public void InitializeBoardCells_BoardSizeWithTwoPlayers_PopulatesStartingPieces(BoardSize boardSize)
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-        IPlayer playerOne = players.Find(p => p.IsPlayerOne)!;
-        IPlayer playerTwo = players.Find(p => !p.IsPlayerOne)!;
+        IPlayer playerOne = _players.Find(p => p.IsPlayerOne)!;
+        IPlayer playerTwo = _players.Find(p => !p.IsPlayerOne)!;
 
         int totalLength = (int)boardSize * (int)boardSize;
         int totalPieceCount = ( totalLength / 2 ) - (int)boardSize;
@@ -107,7 +114,7 @@ public class GameServiceTests
         int emptyRow = ( (int)boardSize / 2 ) - 1;
 
         // Act
-        ICell[,] cells = GameService.InitializeBoardCells(boardSize, players);
+        ICell[,] cells = GameService.InitializeBoardCells(boardSize, _players);
 
         // Assert
         Assert.That(cells.Length, Is.EqualTo(totalLength));
@@ -124,12 +131,6 @@ public class GameServiceTests
     public void TryMove_MissingPieceInFromPosition_ReturnsMovementFailed()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-
-        ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, players);
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players);
-
         UpdatePiecePositionDto position = new()
         {
             FromPosition = new Position(3, 3),
@@ -137,7 +138,7 @@ public class GameServiceTests
         };
 
         // Act
-        UpdatePiecePositionResultDto tryMove = service.TryMove(position);
+        UpdatePiecePositionResultDto tryMove = _gameService.TryMove(position);
 
         // Assert
         Assert.That(tryMove.MovementSucceed, Is.False);
@@ -147,12 +148,6 @@ public class GameServiceTests
     public void TryMove_ToPositionOccupiedByOwnPiece_ReturnsMovementFailed()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-
-        ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, players);
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players);
-
         UpdatePiecePositionDto position = new()
         {
             FromPosition = new Position(6, 1),
@@ -160,7 +155,7 @@ public class GameServiceTests
         };
 
         // Act
-        UpdatePiecePositionResultDto tryMove = service.TryMove(position);
+        UpdatePiecePositionResultDto tryMove = _gameService.TryMove(position);
 
         // Assert
         Assert.That(tryMove.MovementSucceed, Is.False);
@@ -171,12 +166,6 @@ public class GameServiceTests
     public void TryMove_ValidMovement_ReturnsMovementSucceed()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-
-        ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, players);
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players);
-
         UpdatePiecePositionDto position = new()
         {
             FromPosition = new Position(5, 0),
@@ -184,7 +173,7 @@ public class GameServiceTests
         };
 
         // Act
-        UpdatePiecePositionResultDto tryMove = service.TryMove(position);
+        UpdatePiecePositionResultDto tryMove = _gameService.TryMove(position);
 
         // Assert
         Assert.That(tryMove.MovementSucceed, Is.True);
@@ -194,14 +183,10 @@ public class GameServiceTests
     public void GetPieceAt_NoPieceAtPosition_ReturnsNull()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-
-        ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, players);
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players);
+        Position position = new Position(3, 3);
 
         // Act
-        IPiece? piece = service.GetPieceAt(new Position(3, 3));
+        IPiece? piece = _gameService.GetPieceAt(position);
 
         // Assert
         Assert.That(piece, Is.Null);
@@ -211,41 +196,40 @@ public class GameServiceTests
     public void GetPieceAt_FoundPieceAtPosition_ReturnsPiece()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-
-        ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, players);
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players);
+        Position position = new Position(5, 0);
 
         // Act
-        IPiece? piece = service.GetPieceAt(new Position(5, 0));
+        IPiece? piece = _gameService.GetPieceAt(position);
 
         // Assert
         Assert.That(piece, Is.Not.Null);
         Assert.That(piece, Is.TypeOf<Piece>());
     }
 
-    // [Test]
-    // public void AllPieces_()
-    // {
+    [Test]
+    public void AllPieces_GetAllThePiecesOnTheBoard_ReturnsListOfPieces()
+    {
+        // Arrange
 
-    // }
+        // Act
+        IEnumerable<IPiece> pieces = _gameService.AllPieces();
+
+        // Assert
+        Assert.That(pieces, Is.Not.Null);
+        Assert.That(pieces, Is.Not.Empty);
+        Assert.That(pieces, Is.TypeOf<IEnumerable<IPiece>>());
+    }
 
     [Test]
     public void GetLegalMoves_NoPieceFound_ReturnsNoLegalMoves()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
+        Position position = new Position(3, 3);
 
-        ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, players);
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players)
-        {
-            CurrentPlayer = players.Find(p => p.IsPlayerOne)!
-        };
+        _gameService.CurrentPlayer = _players.Find(p => p.IsPlayerOne)!;
 
         // Act
-        LegalMovesResponseDto result = service.GetLegalMoves(new Position(3, 3));
+        LegalMovesResponseDto result = _gameService.GetLegalMoves(position);
 
         // Assert
         Assert.That(result.Moves, Is.Empty);
@@ -255,17 +239,12 @@ public class GameServiceTests
     public void GetLegalMoves_PlayerOneManWithOpenForwardMoves_ReturnsDiagonalPositions()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
+        Position position = new Position(5, 2);
 
-        ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, players);
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players)
-        {
-            CurrentPlayer = players.Find(p => p.IsPlayerOne)!
-        };
+        _gameService.CurrentPlayer = _players.Find(p => p.IsPlayerOne)!;
 
         // Act
-        LegalMovesResponseDto result = service.GetLegalMoves(new Position(5, 2));
+        LegalMovesResponseDto result = _gameService.GetLegalMoves(position);
 
         // Assert
         Assert.That(result.Moves, Is.EquivalentTo(new[]
@@ -279,17 +258,12 @@ public class GameServiceTests
     public void GetLegalMoves_PlayerTwoManWithOpenForwardMoves_ReturnsDiagonalPositions()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
+        Position position = new Position(2, 1);
 
-        ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, players);
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players)
-        {
-            CurrentPlayer = players.Find(p => !p.IsPlayerOne)!
-        };
+        _gameService.CurrentPlayer = _players.Find(p => !p.IsPlayerOne)!;
 
         // Act
-        LegalMovesResponseDto result = service.GetLegalMoves(new Position(2, 1));
+        LegalMovesResponseDto result = _gameService.GetLegalMoves(position);
 
         // Assert
         Assert.That(result.Moves, Is.EquivalentTo(new[]
@@ -303,17 +277,12 @@ public class GameServiceTests
     public void PlayerHasCaptureMoves_NoEnemyPieceFound_ReturnsZeroCaptureMove()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-        IPlayer playerOne = players[0];
-        ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, players);
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players)
-        {
-            CurrentPlayer = playerOne
-        };
+        IPlayer playerOne = _players.Find(p => p.IsPlayerOne)!;
+
+        _gameService.CurrentPlayer = playerOne;
 
         // Act
-        Dictionary<Position, List<Position>> captureMoves = service.PlayerHasCaptureMoves(playerOne);
+        Dictionary<Position, List<Position>> captureMoves = _gameService.PlayerHasCaptureMoves(playerOne);
 
         // Assert
         Assert.That(captureMoves, Is.Empty);
@@ -323,30 +292,12 @@ public class GameServiceTests
     public void PlayerHasCaptureMoves_EnemyPieceFound_ReturnsValidCaptureMoves()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-        IPlayer playerOne = players[0];
-        IPlayer playerTwo = players[1];
-        ICell[,] cells = new Cell[(int)BoardSize.Standard, (int)BoardSize.Standard];
+        IPlayer playerOne = _players.Find(p => p.IsPlayerOne)!;
 
-        for (int row = 0; row < cells.GetLength(0); row++)
-        {
-            for (int column = 0; column < cells.GetLength(1); column++)
-            {
-                cells[row, column] = new Cell(new Position(row, column));
-            }
-        }
-
-        cells[3, 3] = new Cell(new Position(3, 3), new Piece(PieceType.Man, playerOne.Color));
-        cells[2, 2] = new Cell(new Position(2, 2), new Piece(PieceType.Man, playerTwo.Color));
-
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players)
-        {
-            CurrentPlayer = playerOne
-        };
+        _gameService.CurrentPlayer = playerOne;
 
         // Act
-        Dictionary<Position, List<Position>> captureMoves = service.PlayerHasCaptureMoves(playerOne);
+        Dictionary<Position, List<Position>> captureMoves = _gameService.PlayerHasCaptureMoves(playerOne);
 
         // Assert
         Assert.That(captureMoves.ContainsKey(new Position(3, 3)), Is.True);
@@ -360,23 +311,12 @@ public class GameServiceTests
     public void PlayerHasAnyMoves_PlayerPieceIsEmpty_ReturnsFalse()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-        IPlayer playerOne = players[0];
-        ICell[,] cells = new Cell[(int)BoardSize.Standard, (int)BoardSize.Standard];
+        IPlayer playerOne = _players.Find(p => p.IsPlayerOne)!;
 
-        for (int row = 0; row < cells.GetLength(0); row++)
-        {
-            for (int column = 0; column < cells.GetLength(1); column++)
-            {
-                cells[row, column] = new Cell(new Position(row, column));
-            }
-        }
-
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players);
+        _gameService.CurrentPlayer = playerOne;
 
         // Act
-        bool hasAnyMoves = service.PlayerHasAnyMoves(playerOne);
+        bool hasAnyMoves = _gameService.PlayerHasAnyMoves(playerOne);
 
         // Assert
         Assert.That(hasAnyMoves, Is.False);
@@ -386,8 +326,8 @@ public class GameServiceTests
     public void PlayerHasAnyMoves_PlayerCantMoveAnyPiece_ReturnsFalse()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-        IPlayer playerOne = players[0];
+        IPlayer playerOne = _players.Find(p => p.IsPlayerOne)!;
+        
         ICell[,] cells = new Cell[(int)BoardSize.Standard, (int)BoardSize.Standard];
 
         for (int row = 0; row < cells.GetLength(0); row++)
@@ -401,7 +341,7 @@ public class GameServiceTests
         cells[0, 1] = new Cell(new Position(0, 1), new Piece(PieceType.Man, playerOne.Color));
 
         IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players)
+        IGameService service = new GameService(board, _players)
         {
             CurrentPlayer = playerOne
         };
@@ -417,8 +357,8 @@ public class GameServiceTests
     public void PlayerHasAnyMoves_PlayerCanMoveOneOrMorePieces_ReturnsTrue()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-        IPlayer playerOne = players[0];
+        IPlayer playerOne = _players.Find(p => p.IsPlayerOne)!;
+
         ICell[,] cells = new Cell[(int)BoardSize.Standard, (int)BoardSize.Standard];
 
         for (int row = 0; row < cells.GetLength(0); row++)
@@ -432,7 +372,7 @@ public class GameServiceTests
         cells[3, 3] = new Cell(new Position(3, 3), new Piece(PieceType.Man, playerOne.Color));
 
         IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players)
+        IGameService service = new GameService(board, _players)
         {
             CurrentPlayer = playerOne
         };
@@ -448,8 +388,8 @@ public class GameServiceTests
     public void GetMovablePiecesFromPlayer_NoPiecesCanMove_ReturnsEmptyList()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-        IPlayer playerOne = players[0];
+        IPlayer playerOne = _players.Find(p => p.IsPlayerOne)!;
+
         ICell[,] cells = new Cell[(int)BoardSize.Standard, (int)BoardSize.Standard];
 
         for (int row = 0; row < cells.GetLength(0); row++)
@@ -463,7 +403,7 @@ public class GameServiceTests
         cells[0, 1] = new Cell(new Position(0, 1), new Piece(PieceType.Man, playerOne.Color));
 
         IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players)
+        IGameService service = new GameService(board, _players)
         {
             CurrentPlayer = playerOne
         };
@@ -479,8 +419,8 @@ public class GameServiceTests
     public void GetMovablePiecesFromPlayer_OneOrMorePiecesCanMove_ReturnsListOfPieces()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-        IPlayer playerOne = players[0];
+        IPlayer playerOne = _players.Find(p => p.IsPlayerOne)!;
+
         ICell[,] cells = new Cell[(int)BoardSize.Standard, (int)BoardSize.Standard];
 
         for (int row = 0; row < cells.GetLength(0); row++)
@@ -494,7 +434,7 @@ public class GameServiceTests
         cells[3, 3] = new Cell(new Position(3, 3), new Piece(PieceType.Man, playerOne.Color));
 
         IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players)
+        IGameService service = new GameService(board, _players)
         {
             CurrentPlayer = playerOne
         };
@@ -513,14 +453,9 @@ public class GameServiceTests
     public void GetPlayers_FoundPlayers_ReturnsListOfPlayers()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-
-        ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, players);
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players);
 
         // Act
-        List<IPlayer> playersFromService = service.GetPlayers();
+        List<IPlayer> playersFromService = _gameService.GetPlayers();
 
         // Assert
         Assert.That(playersFromService, Is.Not.Null);
@@ -532,14 +467,9 @@ public class GameServiceTests
     public void GetWinner_AllPlayersStillHavePieces_ReturnsNull()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-
-        ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, players);
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players);
 
         // Act
-        IPlayer? winner = service.GetWinner();
+        IPlayer? winner = _gameService.GetWinner();
 
         // Assert
         Assert.That(winner, Is.Null);
@@ -549,63 +479,49 @@ public class GameServiceTests
     public void GetWinner_OnePlayerHasNoPieces_ReturnsPlayerThatWins()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-
-        ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, players);
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players)
+        _gameService.PlayersPieces = new Dictionary<IPlayer, List<IPiece>>
         {
-            PlayersPieces = new Dictionary<IPlayer, List<IPiece>>
-            {
-                { players[0], new List<IPiece>() },
-                { players[1], new List<IPiece> { new Piece(PieceType.Man, players[1].Color) } }
-            }
+            { _players[0], new List<IPiece>() },
+            { _players[1], new List<IPiece> { new Piece(PieceType.Man, _players[1].Color) } }
         };
 
         // Act
-        IPlayer? winner = service.GetWinner();
+        IPlayer? winner = _gameService.GetWinner();
 
         // Assert
-        Assert.That(winner, Is.EqualTo(players[1]));
+        Assert.That(winner, Is.EqualTo(_players[1]));
     }
 
     [Test]
     public void PlayersPieceCount_PlayerHavePieces_ReturnPairOfPlayerAndSumOfPieces()
     {
         // Arrange
-        List<IPlayer> players = SetupPlayers();
-
-        ICell[,] cells = GameService.InitializeBoardCells(BoardSize.Standard, players);
-        IBoard board = new Board(BoardSize.Standard, cells);
-        IGameService service = new GameService(board, players)
+        _gameService.PlayersPieces = new Dictionary<IPlayer, List<IPiece>>
         {
-            PlayersPieces = new Dictionary<IPlayer, List<IPiece>>
-            {
-                { players[0], new List<IPiece>()
-                    {
-                        new Piece(PieceType.Man, ConsoleColor.Red),
-                        new Piece(PieceType.Man, ConsoleColor.Red),
-                    }
-                },
-                { players[1], new List<IPiece>()
-                    {
-                        new Piece(PieceType.Man, ConsoleColor.DarkBlue),
-                        new Piece(PieceType.Man, ConsoleColor.DarkBlue),
-                    }
+            { _players[0], new List<IPiece>()
+                {
+                    new Piece(PieceType.Man, ConsoleColor.Red),
+                    new Piece(PieceType.Man, ConsoleColor.Red),
+                }
+            },
+            { _players[1], new List<IPiece>()
+                {
+                    new Piece(PieceType.Man, ConsoleColor.DarkBlue),
+                    new Piece(PieceType.Man, ConsoleColor.DarkBlue),
                 }
             }
         };
 
         // Act
-        Dictionary<IPlayer, int> playersPieceCount = service.PlayersPieceCount();
+        Dictionary<IPlayer, int> playersPieceCount = _gameService.PlayersPieceCount();
 
         // Assert
         Assert.That(playersPieceCount, Is.Not.Null);
         Assert.That(playersPieceCount, Is.Not.Empty);
         Assert.That(playersPieceCount, Is.TypeOf<Dictionary<IPlayer, int>>());
         Assert.That(playersPieceCount.Count, Is.EqualTo(2));
-        Assert.That(playersPieceCount[players[0]], Is.EqualTo(2));
-        Assert.That(playersPieceCount[players[1]], Is.EqualTo(2));
+        Assert.That(playersPieceCount[_players[0]], Is.EqualTo(2));
+        Assert.That(playersPieceCount[_players[1]], Is.EqualTo(2));
     }
 
     [Test]
