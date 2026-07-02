@@ -1,5 +1,3 @@
-using Spectre.Console;
-
 public class ConsoleRenderer
 {
   private IBoard _board;

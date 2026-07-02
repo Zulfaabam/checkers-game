@@ -1,4 +1,4 @@
-﻿namespace CheckersGame;
+﻿namespace CheckersGameConsole;
 
 class Program
 {
