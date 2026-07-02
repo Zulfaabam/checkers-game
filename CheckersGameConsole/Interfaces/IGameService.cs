@@ -13,6 +13,6 @@ public interface IGameService
     public bool PlayerHasAnyMoves(IPlayer player);
     public List<IPlayer> GetPlayers();
     public IBoard GetBoard();
-    public IPlayer GetWinner();
+    public IPlayer? GetWinner();
     public Dictionary<IPlayer, int> PlayersPieceCount();
 }

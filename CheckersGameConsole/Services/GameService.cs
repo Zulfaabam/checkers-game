@@ -95,24 +95,24 @@ public class GameService : IGameService
     return false;
   }
 
-  public GameResponseDto InitializeBoard(CreateGameDto? dto)
+  public GameResponseDto InitializeBoard(CreateGameDto? createGameDto)
   {
-    BoardSize size = dto?.Size ?? BoardSize.Standard;
+    BoardSize size = createGameDto?.Size ?? BoardSize.Standard;
 
     // Reset player details, board size and pieces on board
-    if( dto != null )
+    if( createGameDto != null )
     {
       IPlayer? player1 = _players.Find(p => p.IsPlayerOne);
       if( player1 != null )
       {
-        player1.Name = dto.PlayerOneName;
-        player1.Color = dto.PlayerOnePreferenceColor;
+        player1.Name = createGameDto.PlayerOneName;
+        player1.Color = createGameDto.PlayerOnePreferenceColor;
       }
       IPlayer? player2 = _players.Find(p => !p.IsPlayerOne);
       if( player2 != null )
       {
-        player2.Name = dto.PlayerTwoName;
-        player2.Color = dto.PlayerTwoPreferenceColor;
+        player2.Name = createGameDto.PlayerTwoName;
+        player2.Color = createGameDto.PlayerTwoPreferenceColor;
       }
     }
 
@@ -267,12 +267,23 @@ public class GameService : IGameService
     return _players;
   }
 
-  public IPlayer GetWinner()
+  public IPlayer? GetWinner()
   {
-    return PlayersPieces
+    List<IPlayer> playersWithRemainingPieces = PlayersPieces
       .Where(player => player.Value.Count != 0)
       .Select(p => p.Key)
-      .First();
+      .ToList();
+
+    bool thereIsAWinner = playersWithRemainingPieces.Count == 1;
+
+    if( thereIsAWinner )
+    {
+      IPlayer theWinner = playersWithRemainingPieces[0];
+
+      return theWinner;
+    }
+
+    return null;
   }
 
   public Dictionary<IPlayer, int> PlayersPieceCount()
